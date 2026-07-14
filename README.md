@@ -25,6 +25,7 @@
 - [Live Demo](#-live-demo)
 - [Features](#-features)
 - [Tech Stack](#️-tech-stack)
+- [Project Structure](#-project-structure)
 - [Architecture & Security](#-architecture--security)
 - [Running Locally](#-running-locally)
 - [Deployment](#️-deployment)
@@ -74,6 +75,43 @@ Everything from the workout structure to the meal recipes is generated fresh per
 | Icons | Lucide React |
 | AI | Google Gemini API |
 | Hosting | Vercel (frontend + serverless functions) |
+
+---
+
+## 📁 Project Structure
+
+```
+fittrack/
+├── api/
+│   └── gemini.ts            # Serverless function — holds the Gemini API key server-side,
+│                             # handles plan generation + AI chat requests, with automatic
+│                             # fallback to a backup key on failure
+│
+├── components/               # Reusable UI building blocks (buttons, inputs, etc.)
+│   ├── Button.tsx
+│   └── Input.tsx
+│
+├── services/
+│   ├── geminiService.ts      # Frontend-side client — calls /api/gemini instead of
+│                             # Google's API directly, so the key is never exposed
+│   └── storageService.ts     # Handles user session, saved plans, logs, and theme
+│                             # via browser localStorage
+│
+├── public/                   # Static assets served at the site root
+│   ├── favicon.png
+│   ├── favicon.ico
+│   └── logo.svg
+│
+├── App.tsx                   # Main app — routing between landing, auth, profile
+│                             # setup, and dashboard views
+├── index.html                # Page shell, favicon, title, meta tags
+├── index.tsx                 # React entry point
+├── index.css                 # Global styles
+├── types.ts                  # Shared TypeScript types (UserProfile, WeeklyPlan, etc.)
+├── vite.config.ts
+├── tsconfig.json
+└── package.json
+```
 
 ---
 
