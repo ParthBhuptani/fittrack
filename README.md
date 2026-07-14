@@ -1,51 +1,71 @@
-<div align="center">
-  <img src="./public/logo-512.png" alt="FitTrack logo" width="96" height="96" />
+<p align="center">
+  <img src="./public/favicon.png" width="110" alt="FitTrack logo" />
+</p>
 
-  # FitTrack
+<h1 align="center">FitTrack</h1>
 
-  **AI-powered, personalized workout and diet planning.**
+<p align="center"><i>AI-powered, personalized workout and diet planning.</i></p>
 
-  [![Live Demo](https://img.shields.io/badge/demo-live-10b981?style=flat-square)](https://fittrack-planner.vercel.app)
-  [![Built with React](https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-3178c6?style=flat-square)](https://react.dev)
-  [![Powered by Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=flat-square)](https://ai.google.dev)
-  [![Deployed on Vercel](https://img.shields.io/badge/hosted%20on-Vercel-000000?style=flat-square)](https://vercel.com)
+<p align="center">
+  <a href="https://fittrack-planner.vercel.app"><img src="https://img.shields.io/badge/demo-live-10b981?style=flat-square" alt="Live Demo" /></a>
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-3178c6?style=flat-square&logo=react" alt="React" /></a>
+  <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=flat-square&logo=google" alt="Gemini AI" /></a>
+  <a href="https://vercel.com"><img src="https://img.shields.io/badge/hosted%20on-Vercel-000000?style=flat-square&logo=vercel" alt="Vercel" /></a>
+</p>
 
-  [**Live App →**](https://fittrack-planner.vercel.app)
-</div>
+> FitTrack generates a complete, personalized 7-day workout and diet plan from a single user profile — age, weight, goal, activity level, dietary restrictions, injuries, and available equipment — then lets users track progress and ask an AI coach follow-up questions along the way.
+
+**🔗 Live app:** [fittrack-planner.vercel.app](https://fittrack-planner.vercel.app)
 
 ---
 
-## Overview
+## 📌 Table of Contents
 
-FitTrack generates a complete, personalized 7-day workout and diet plan from a single user profile — age, weight, goal, activity level, dietary restrictions, injuries, and available equipment — then lets users track progress and ask an AI coach follow-up questions along the way.
+- [About the Project](#-about-the-project)
+- [Live Demo](#-live-demo)
+- [Features](#-features)
+- [Tech Stack](#️-tech-stack)
+- [Architecture & Security](#-architecture--security)
+- [Running Locally](#-running-locally)
+- [Deployment](#️-deployment)
+- [Roadmap](#️-roadmap)
 
-## Features
+---
 
-**AI-Generated Plans**
-- Full 7-day plan covering workouts and meals, tailored to the user's body stats, goals, and constraints
-- Every exercise includes an easier and a harder variation, so the plan scales with fitness level
-- Every meal includes a real ingredient list and step-by-step cooking instructions
-- Injuries and allergies are factored directly into what gets generated
+## 🧠 About the Project
 
-**AI Coach**
-- In-app chat with context on the user's specific profile and current plan
-- Answers follow-up questions about exercises, nutrition, and general fitness
+**FitTrack** is a full-stack web app that turns a single fitness profile into a complete, AI-generated weekly plan — no generic templates, no one-size-fits-all workouts. It's built to actually adapt to the person using it: their injuries, their allergies, their equipment, their goals.
 
-**Progress Tracking**
-- Workout completion and weight logged over time
-- Visualized with interactive charts
-- Daily water intake tracked against a goal
+Everything from the workout structure to the meal recipes is generated fresh per user, with a chat-based AI coach available for follow-up questions once the plan is live.
 
-**Workout Experience**
-- Built-in play / pause / reset timers for guided sessions
-- Quick links to exercise demo videos and recipe videos
+---
 
-**Account & UX**
-- Sign up / log in, with per-user saved plans, logs, and chat history
-- Editable profile — regenerate a plan any time stats or goals change
-- Full light/dark theme support, responsive on desktop and mobile
+## 🌐 Live Demo
 
-## Tech Stack
+**🔗 [https://fittrack-planner.vercel.app](https://fittrack-planner.vercel.app)**
+
+> 💡 Sign up, fill out your profile, and watch a full 7-day plan get generated in real time — try the AI coach chat afterward too.
+
+---
+
+## ✨ Features
+
+| | Feature | Description |
+|---|---|---|
+| 🧬 | **Personalized 7-Day Plans** | Full week of workouts and meals tailored to age, weight, gender, goal, activity level, diet type, allergies, injuries, and available equipment |
+| 🔄 | **Exercise Variations** | Every exercise includes an easier and harder variation, so the plan scales with fitness level |
+| 🍳 | **Full Recipes** | Every meal includes a real ingredient list and step-by-step cooking instructions, not just a name and calorie count |
+| 🩹 | **Injury-Aware** | Workouts are generated with the user's stated injuries/conditions factored in |
+| 🤖 | **AI Coach Chat** | In-app chat with context on the user's specific profile and current plan, for follow-up fitness and nutrition questions |
+| 📊 | **Progress Tracking** | Workout completion and weight logged over time, visualized with interactive charts |
+| 💧 | **Water Tracking** | Daily water intake tracked against a set goal |
+| ⏱️ | **Workout Timers** | Built-in play / pause / reset timers for guided sessions |
+| 🌗 | **Dark Mode** | Full light/dark theme support |
+| 👤 | **Accounts** | Sign up / log in, with per-user saved plans, logs, and chat history — editable profile to regenerate a plan any time |
+
+---
+
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -55,7 +75,9 @@ FitTrack generates a complete, personalized 7-day workout and diet plan from a s
 | AI | Google Gemini API |
 | Hosting | Vercel (frontend + serverless functions) |
 
-## Architecture & Security
+---
+
+## 🔒 Architecture & Security
 
 AI calls are never made directly from the browser:
 
@@ -63,9 +85,11 @@ AI calls are never made directly from the browser:
 - The frontend calls this internal endpoint rather than Google's API directly, so the key is never exposed in the client bundle or visible via dev tools.
 - **Automatic key fallback:** the app is configured with a primary and backup Gemini API key. If a request fails on the primary key (rate limit, quota, etc.), it automatically retries on the backup — transparent to the user.
 
-> **Known limitation:** accounts, plans, and progress logs currently live in browser `localStorage`, not a persistent database — data is local to a single browser/device. A migration to a real backend (Firebase or Supabase) with proper authentication is planned. See [Roadmap](#roadmap).
+> **Known limitation:** accounts, plans, and progress logs currently live in browser `localStorage`, not a persistent database — data is local to a single browser/device. A migration to a real backend with proper authentication is planned. See [Roadmap](#️-roadmap).
 
-## Running Locally
+---
+
+## 🚀 Running Locally
 
 **Prerequisites:** Node.js
 
@@ -86,7 +110,9 @@ npm run dev
 
 > AI plan generation and the AI chat coach depend on the serverless function in `/api`, which only runs in a deployed environment. Locally you can test the UI and flows; AI responses require a deployed instance.
 
-## Deployment
+---
+
+## ☁️ Deployment
 
 Deployed on [Vercel](https://vercel.com), connected to this repository's `main` branch — every push triggers an automatic redeploy.
 
@@ -94,7 +120,9 @@ Required environment variables (Vercel project settings):
 - `GEMINI_API_KEY`
 - `GEMINI_API_KEY_2`
 
-## Roadmap
+---
+
+## 🗺️ Roadmap
 
 - [ ] Migrate from `localStorage` to a real database (Firebase or Supabase) for persistent, cross-device accounts
 - [ ] Proper authentication (replacing current local credential storage)
@@ -103,6 +131,4 @@ Required environment variables (Vercel project settings):
 
 ---
 
-<div align="center">
-  <sub>Built by Parth Bhuptani</sub>
-</div>
+<p align="center"><sub>Built by Parth Bhuptani</sub></p>
