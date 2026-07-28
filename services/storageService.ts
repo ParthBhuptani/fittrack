@@ -1,123 +1,178 @@
-import { User, WeeklyPlan, ProgressLog } from '../types';
+import { supabase } from './supabaseClient';
+import { User, UserProfile, WeeklyPlan, ProgressLog } from '../types';
 
-const KEYS = {
-  USERS_DB: 'fittrack_users_db', // Stores array of all registered users
-  SESSION: 'fittrack_session',   // Stores currently logged in user ID
-  PLAN_PREFIX: 'fittrack_plan_', // Prefix + userId
-  LOGS_PREFIX: 'fittrack_logs_', // Prefix + userId
-  CHAT_PREFIX: 'fittrack_chat_', // Prefix + userId
-  THEME: 'fittrack_theme',
-};
+const THEME_KEY = 'fittrack_theme';
 
 export const StorageService = {
   // --- AUTH METHODS ---
-  
-  getUsers: (): User[] => {
-    try {
-      const data = localStorage.getItem(KEYS.USERS_DB);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error("Error parsing users db from storage:", e);
-      return [];
-    }
-  },
 
-  register: (user: User): boolean => {
-    const users = StorageService.getUsers();
-    if (users.find(u => u.email === user.email)) {
-      return false; // User exists
-    }
-    users.push(user);
-    localStorage.setItem(KEYS.USERS_DB, JSON.stringify(users));
-    StorageService.setSession(user);
-    return true;
-  },
+  // Creates a new account. Returns the created User on success, or null if it fails
+  // (e.g. email already registered). Profile is optional at signup time — it can be
+  // saved afterward with saveProfile().
+  register: async (email: string, password: string, profile?: UserProfile): Promise<User | null> => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
 
-  login: (email: string, password: string): User | null => {
-    const users = StorageService.getUsers();
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      StorageService.setSession(user);
-      return user;
-    }
-    return null;
-  },
-
-  setSession: (user: User) => {
-    localStorage.setItem(KEYS.SESSION, JSON.stringify(user));
-  },
-
-  getCurrentUser: (): User | null => {
-    try {
-      const data = localStorage.getItem(KEYS.SESSION);
-      return data ? JSON.parse(data) : null;
-    } catch (e) {
-      console.error("Error parsing current session user from storage:", e);
+    if (error || !data.user) {
+      console.error('Registration failed:', error?.message);
       return null;
     }
+
+    const newUser: User = {
+      id: data.user.id,
+      email: data.user.email || email,
+      profile,
+      createdAt: Date.now(),
+    };
+
+    // Create the matching profile row
+    const { error: profileError } = await supabase.from('profiles').insert({
+      id: newUser.id,
+      email: newUser.email,
+      name: profile?.name || null,
+      profile_data: profile || null,
+    });
+
+    if (profileError) {
+      console.error('Failed to create profile row:', profileError.message);
+    }
+
+    return newUser;
   },
 
-  logout: () => {
-    localStorage.removeItem(KEYS.SESSION);
+  login: async (email: string, password: string): Promise<User | null> => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error || !data.user) {
+      console.error('Login failed:', error?.message);
+      return null;
+    }
+
+    return StorageService.getCurrentUser();
+  },
+
+  logout: async (): Promise<void> => {
+    await supabase.auth.signOut();
+  },
+
+  // Fetches the currently logged-in user (from Supabase's active session) plus
+  // their saved profile row, combined into one User object.
+  getCurrentUser: async (): Promise<User | null> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    return {
+      id: user.id,
+      email: user.email || '',
+      profile: profileRow?.profile_data || undefined,
+      createdAt: profileRow?.created_at ? new Date(profileRow.created_at).getTime() : Date.now(),
+    };
+  },
+
+  // Saves/updates a user's profile (used after onboarding, or when editing profile later)
+  saveProfile: async (userId: string, profile: UserProfile): Promise<boolean> => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ name: profile.name, profile_data: profile })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Failed to save profile:', error.message);
+      return false;
+    }
+    return true;
   },
 
   // --- DATA METHODS (User Scoped) ---
 
-  savePlan: (userId: string, plan: WeeklyPlan) => {
-    localStorage.setItem(KEYS.PLAN_PREFIX + userId, JSON.stringify(plan));
+  savePlan: async (userId: string, plan: WeeklyPlan): Promise<void> => {
+    const { error } = await supabase
+      .from('plans')
+      .upsert({ user_id: userId, plan_data: plan, updated_at: new Date().toISOString() });
+
+    if (error) console.error('Failed to save plan:', error.message);
   },
 
-  getPlan: (userId: string): WeeklyPlan | null => {
-    try {
-      const data = localStorage.getItem(KEYS.PLAN_PREFIX + userId);
-      return data ? JSON.parse(data) : null;
-    } catch (e) {
-      console.error("Error parsing weekly plan from storage:", e);
-      return null;
-    }
+  getPlan: async (userId: string): Promise<WeeklyPlan | null> => {
+    const { data, error } = await supabase
+      .from('plans')
+      .select('plan_data')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) return null;
+    return data.plan_data as WeeklyPlan;
   },
 
-  saveLog: (userId: string, log: ProgressLog) => {
-    const logs = StorageService.getLogs(userId);
-    const index = logs.findIndex((l) => l.date === log.date);
-    if (index >= 0) {
-      logs[index] = { ...logs[index], ...log };
-    } else {
-      logs.push(log);
-    }
-    localStorage.setItem(KEYS.LOGS_PREFIX + userId, JSON.stringify(logs));
+  saveLog: async (userId: string, log: ProgressLog): Promise<void> => {
+    const { error } = await supabase.from('logs').upsert(
+      {
+        user_id: userId,
+        date: log.date,
+        weight: log.weight,
+        calories_consumed: log.caloriesConsumed,
+        workout_completed: log.workoutCompleted,
+        water_intake: log.waterIntake,
+        details: log.details || {},
+      },
+      { onConflict: 'user_id,date' }
+    );
+
+    if (error) console.error('Failed to save log:', error.message);
   },
 
-  getLogs: (userId: string): ProgressLog[] => {
-    try {
-      const data = localStorage.getItem(KEYS.LOGS_PREFIX + userId);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error("Error parsing logs from storage:", e);
-      return [];
-    }
+  getLogs: async (userId: string): Promise<ProgressLog[]> => {
+    const { data, error } = await supabase
+      .from('logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('date', { ascending: true });
+
+    if (error || !data) return [];
+
+    return data.map((row) => ({
+      date: row.date,
+      weight: row.weight,
+      caloriesConsumed: row.calories_consumed,
+      workoutCompleted: row.workout_completed,
+      waterIntake: row.water_intake,
+      details: row.details || {},
+    }));
   },
 
   // --- CHAT HISTORY ---
 
-  saveChatHistory: (userId: string, history: { role: 'user' | 'model'; text: string }[]) => {
-    localStorage.setItem(KEYS.CHAT_PREFIX + userId, JSON.stringify(history));
+  saveChatHistory: async (
+    userId: string,
+    history: { role: 'user' | 'model'; text: string }[]
+  ): Promise<void> => {
+    const { error } = await supabase
+      .from('chat_history')
+      .upsert({ user_id: userId, messages: history, updated_at: new Date().toISOString() });
+
+    if (error) console.error('Failed to save chat history:', error.message);
   },
 
-  getChatHistory: (userId: string): { role: 'user' | 'model'; text: string }[] => {
-    try {
-      const data = localStorage.getItem(KEYS.CHAT_PREFIX + userId);
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      console.error("Error parsing chat history from storage:", e);
-      return [];
-    }
+  getChatHistory: async (userId: string): Promise<{ role: 'user' | 'model'; text: string }[]> => {
+    const { data, error } = await supabase
+      .from('chat_history')
+      .select('messages')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) return [];
+    return data.messages || [];
   },
 
-  // --- SETTINGS ---
+  // --- SETTINGS (kept local — just a UI preference, no need for a database round-trip) ---
 
   setTheme: (theme: 'light' | 'dark') => {
-    localStorage.setItem(KEYS.THEME, theme);
+    localStorage.setItem(THEME_KEY, theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -126,6 +181,6 @@ export const StorageService = {
   },
 
   getTheme: (): 'light' | 'dark' => {
-    return (localStorage.getItem(KEYS.THEME) as 'light' | 'dark') || 'light';
+    return (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'light';
   },
 };

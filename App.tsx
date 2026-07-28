@@ -217,23 +217,18 @@ const AuthFlow: React.FC<{ onComplete: (user: User) => void }> = ({ onComplete }
     return () => clearInterval(interval);
   }, [isGenerating]);
 
-  const handleAuthSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (authMode === 'login') {
-      const user = StorageService.login(email, password);
+      const user = await StorageService.login(email, password);
       if (user) {
         onComplete(user);
       } else {
         setError('Invalid email or password. Please try again.');
       }
     } else {
-      const users = StorageService.getUsers();
-      if (users.find(u => u.email === email)) {
-        setError('User already exists. Please login.');
-        return;
-      }
       setProfile(prev => ({ ...prev, name }));
       setStep('profile');
     }
@@ -242,22 +237,18 @@ const AuthFlow: React.FC<{ onComplete: (user: User) => void }> = ({ onComplete }
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
-    
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      password,
-      profile,
-      createdAt: Date.now(),
-    };
 
-    try {
-      StorageService.register(newUser);
-      onComplete(newUser);
-    } catch (err) {
-      setError("Something went wrong saving your profile.");
+    const newUser = await StorageService.register(email, password, profile);
+
+    if (!newUser) {
+      setError('That email may already be registered. Please try logging in instead.');
       setIsGenerating(false);
+      setStep('auth');
+      setAuthMode('login');
+      return;
     }
+
+    onComplete(newUser);
   };
 
   const toggleRestriction = (r: string) => {
@@ -553,7 +544,7 @@ const SettingsView: React.FC<{
     if (regenerate) {
       try {
         const newPlan = await GeminiService.generateWeeklyPlan(profile);
-        StorageService.savePlan(user.id, newPlan);
+        await StorageService.savePlan(user.id, newPlan);
       } catch (e) {
         alert("Failed to regenerate plan");
       }
@@ -1088,12 +1079,15 @@ const Dashboard: React.FC<{
 
   // Load chat history on mount
   useEffect(() => {
-    const savedChat = StorageService.getChatHistory(user.id);
-    if (savedChat && savedChat.length > 0) {
-      setChatHistory(savedChat);
-    } else {
-      setChatHistory([{ role: 'model', text: `Hi ${user.profile?.name}! I'm your AI coach. How can I help you today?` }]);
-    }
+    const loadChat = async () => {
+      const savedChat = await StorageService.getChatHistory(user.id);
+      if (savedChat && savedChat.length > 0) {
+        setChatHistory(savedChat);
+      } else {
+        setChatHistory([{ role: 'model', text: `Hi ${user.profile?.name}! I'm your AI coach. How can I help you today?` }]);
+      }
+    };
+    loadChat();
   }, [user.id]);
 
   // Click outside listener for menus
@@ -1272,14 +1266,14 @@ const Dashboard: React.FC<{
     setChatInput('');
     const newHistory: { role: 'user' | 'model', text: string }[] = [...chatHistory, { role: 'user', text: userMsg }];
     setChatHistory(newHistory);
-    StorageService.saveChatHistory(user.id, newHistory);
+    await StorageService.saveChatHistory(user.id, newHistory);
     setIsChatting(true);
 
     try {
       const response = await GeminiService.chatWithCoach(newHistory, userMsg, user.profile!);
       const updatedHistory: { role: 'user' | 'model', text: string }[] = [...newHistory, { role: 'model', text: response }];
       setChatHistory(updatedHistory);
-      StorageService.saveChatHistory(user.id, updatedHistory);
+      await StorageService.saveChatHistory(user.id, updatedHistory);
     } catch (error) {
       setChatHistory(prev => [...prev, { role: 'model', text: "Sorry, I had trouble connecting. Try again." }]);
     } finally {
@@ -2213,10 +2207,13 @@ export default function App() {
     StorageService.setTheme(savedTheme);
 
     // Check for active session
-    const currentUser = StorageService.getCurrentUser();
-    if (currentUser) {
-      loadUserData(currentUser);
-    }
+    const init = async () => {
+      const currentUser = await StorageService.getCurrentUser();
+      if (currentUser) {
+        await loadUserData(currentUser);
+      }
+    };
+    init();
   }, []);
 
   const toggleTheme = () => {
@@ -2225,12 +2222,12 @@ export default function App() {
     StorageService.setTheme(newTheme);
   };
 
-  const loadUserData = (userData: User) => {
+  const loadUserData = async (userData: User) => {
     setUser(userData);
     
     // Load Plan specific to this user
-    const savedPlan = StorageService.getPlan(userData.id);
-    const savedLogs = StorageService.getLogs(userData.id);
+    const savedPlan = await StorageService.getPlan(userData.id);
+    const savedLogs = await StorageService.getLogs(userData.id);
     
     setLogs(savedLogs);
 
@@ -2247,16 +2244,16 @@ export default function App() {
     // If it's a new user (just registered), we might need to generate the plan
     // If it's a login, we just load.
     
-    const existingPlan = StorageService.getPlan(userData.id);
+    const existingPlan = await StorageService.getPlan(userData.id);
     
     if (existingPlan) {
-      loadUserData(userData);
+      await loadUserData(userData);
     } else if (userData.profile) {
       // Generate new plan
       try {
         const generatedPlan = await GeminiService.generateWeeklyPlan(userData.profile);
-        StorageService.savePlan(userData.id, generatedPlan);
-        loadUserData(userData);
+        await StorageService.savePlan(userData.id, generatedPlan);
+        await loadUserData(userData);
       } catch (error) {
         console.error("Failed to generate plan", error);
         alert("Something went wrong generating your plan. Please try again.");
@@ -2264,38 +2261,31 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => {
-    StorageService.logout();
+  const handleLogout = async () => {
+    await StorageService.logout();
     setUser(null);
     setPlan(null);
     setLogs([]);
     setView('landing');
   };
 
-  const handleLogProgress = (log: ProgressLog) => {
+  const handleLogProgress = async (log: ProgressLog) => {
     if (!user) return;
-    StorageService.saveLog(user.id, log);
-    setLogs(StorageService.getLogs(user.id));
+    await StorageService.saveLog(user.id, log);
+    setLogs(await StorageService.getLogs(user.id));
   };
 
-  const handleUpdatePlan = (updatedPlan: WeeklyPlan) => {
+  const handleUpdatePlan = async (updatedPlan: WeeklyPlan) => {
     if (!user) return;
     setPlan(updatedPlan);
-    StorageService.savePlan(user.id, updatedPlan);
+    await StorageService.savePlan(user.id, updatedPlan);
   };
 
-  const handleUpdateUser = (updatedProfile: UserProfile) => {
+  const handleUpdateUser = async (updatedProfile: UserProfile) => {
     if (!user) return;
     const updatedUser = { ...user, profile: updatedProfile };
     setUser(updatedUser);
-    // Persist to "DB"
-    const users = StorageService.getUsers();
-    const idx = users.findIndex(u => u.id === user.id);
-    if (idx >= 0) {
-      users[idx] = updatedUser;
-      localStorage.setItem('fittrack_users_db', JSON.stringify(users));
-      StorageService.setSession(updatedUser);
-    }
+    await StorageService.saveProfile(user.id, updatedProfile);
   };
 
   return (
