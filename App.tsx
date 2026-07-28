@@ -2216,15 +2216,24 @@ export default function App() {
     init();
   }, []);
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    StorageService.setTheme(newTheme);
+    StorageService.setTheme(newTheme); // applies the visual change + local fallback
+
+    if (user) {
+      await StorageService.setUserTheme(user.id, newTheme); // persist to their account
+    }
   };
 
   const loadUserData = async (userData: User) => {
     setUser(userData);
-    
+
+    // Apply this account's saved theme
+    const userTheme = await StorageService.getUserTheme(userData.id);
+    setTheme(userTheme);
+    StorageService.setTheme(userTheme);
+
     // Load Plan specific to this user
     const savedPlan = await StorageService.getPlan(userData.id);
     const savedLogs = await StorageService.getLogs(userData.id);

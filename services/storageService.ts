@@ -169,8 +169,27 @@ export const StorageService = {
     return data.messages || [];
   },
 
-  // --- SETTINGS (kept local — just a UI preference, no need for a database round-trip) ---
+  // --- SETTINGS ---
 
+  // Theme for the logged-in user's account — follows them across devices/browsers
+  getUserTheme: async (userId: string): Promise<'light' | 'dark'> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('theme')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data?.theme) return 'light';
+    return data.theme as 'light' | 'dark';
+  },
+
+  setUserTheme: async (userId: string, theme: 'light' | 'dark'): Promise<void> => {
+    const { error } = await supabase.from('profiles').update({ theme }).eq('id', userId);
+    if (error) console.error('Failed to save theme:', error.message);
+  },
+
+  // Local theme — only used before anyone is logged in (landing/auth screens),
+  // just a sensible default with no account to attach it to yet.
   setTheme: (theme: 'light' | 'dark') => {
     localStorage.setItem(THEME_KEY, theme);
     if (theme === 'dark') {
