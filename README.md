@@ -162,8 +162,8 @@ Required environment variables (Vercel project settings):
 
 ## 🗺️ Roadmap
 
-- [ ] Migrate from `localStorage` to a real database (Firebase or Supabase) for persistent, cross-device accounts
-- [ ] Proper authentication (replacing current local credential storage)
+- ✅ Migrate from `localStorage` to a real database (Firebase or Supabase) for persistent, cross-device accounts
+- ✅ Proper authentication (replacing current local credential storage)
 - [ ] UI refinements
 - [ ] Custom domain
 
