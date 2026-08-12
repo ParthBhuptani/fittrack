@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fittrack-planner.vercel.app/sitemap.xml
