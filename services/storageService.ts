@@ -81,6 +81,7 @@ export const StorageService = {
       email: user.email || '',
       profile: profileRow?.profile_data || undefined,
       createdAt: profileRow?.created_at ? new Date(profileRow.created_at).getTime() : Date.now(),
+      displayName: user.user_metadata?.full_name || user.user_metadata?.name || undefined,
     };
   },
 

@@ -27,7 +27,7 @@ const AuthFlow: React.FC<{ onComplete: (user: User) => void; existingUser?: User
 
   // Profile Form State
   const [profile, setProfile] = useState<UserProfile>({
-    name: '',
+    name: existingUser?.displayName || '',
     age: 25,
     gender: Gender.Male,
     height: 170, // cm
