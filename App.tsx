@@ -27,6 +27,14 @@ export default function App() {
   const [plan, setPlan] = useState<WeeklyPlan | null>(null);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
   const [view, setView] = useState<'landing' | 'auth' | 'dashboard'>('landing');
+  // True until we've checked whether there's an active session. Keeping this
+  // separate from `view` avoids briefly flashing the landing page for a
+  // returning, already-logged-in user before we know they're logged in.
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  // Set when a user is authenticated (e.g. via Google) but hasn't filled out
+  // their fitness profile yet — AuthFlow uses this to skip straight to the
+  // profile step instead of showing the login form again.
+  const [pendingUser, setPendingUser] = useState<User | null>(null);
 
   // Initialization
   useEffect(() => {
@@ -38,8 +46,10 @@ export default function App() {
     const init = async () => {
       const currentUser = await StorageService.getCurrentUser();
       if (currentUser) {
+        import('./components/Dashboard'); // kick off the download in parallel with loadUserData below
         await loadUserData(currentUser);
       }
+      setIsCheckingSession(false);
     };
     init();
   }, []);
@@ -62,6 +72,14 @@ export default function App() {
     setTheme(userTheme);
     StorageService.setTheme(userTheme);
 
+    if (!userData.profile) {
+      // Authenticated (e.g. via Google) but hasn't completed their fitness
+      // profile yet — send them straight to the profile step, not the login form.
+      setPendingUser(userData);
+      setView('auth');
+      return;
+    }
+
     // Load Plan specific to this user
     const savedPlan = await StorageService.getPlan(userData.id);
     const savedLogs = await StorageService.getLogs(userData.id);
@@ -80,6 +98,7 @@ export default function App() {
   const handleUserAuthComplete = async (userData: User) => {
     // If it's a new user (just registered), we might need to generate the plan
     // If it's a login, we just load.
+    setPendingUser(null);
     
     const existingPlan = await StorageService.getPlan(userData.id);
     
@@ -127,28 +146,34 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${theme} font-sans selection:bg-brand-500 selection:text-white`}>
-      {view === 'landing' && <LandingPage onAuth={() => setView('auth')} />}
-      
-      {view === 'auth' && (
-        <Suspense fallback={<SuspenseFallback />}>
-          <AuthFlow onComplete={handleUserAuthComplete} />
-        </Suspense>
-      )}
-      
-      {view === 'dashboard' && user && plan && (
-        <Suspense fallback={<SuspenseFallback />}>
-          <Dashboard 
-            user={user} 
-            plan={plan} 
-            logs={logs}
-            onLogout={handleLogout}
-            onLogProgress={handleLogProgress}
-            onUpdatePlan={handleUpdatePlan}
-            onUpdateUser={handleUpdateUser}
-            theme={theme}
-            toggleTheme={toggleTheme}
-          />
-        </Suspense>
+      {isCheckingSession ? (
+        <SuspenseFallback />
+      ) : (
+        <>
+          {view === 'landing' && <LandingPage onAuth={() => setView('auth')} />}
+
+          {view === 'auth' && (
+            <Suspense fallback={<SuspenseFallback />}>
+              <AuthFlow onComplete={handleUserAuthComplete} existingUser={pendingUser || undefined} />
+            </Suspense>
+          )}
+
+          {view === 'dashboard' && user && plan && (
+            <Suspense fallback={<SuspenseFallback />}>
+              <Dashboard 
+                user={user} 
+                plan={plan} 
+                logs={logs}
+                onLogout={handleLogout}
+                onLogProgress={handleLogProgress}
+                onUpdatePlan={handleUpdatePlan}
+                onUpdateUser={handleUpdateUser}
+                theme={theme}
+                toggleTheme={toggleTheme}
+              />
+            </Suspense>
+          )}
+        </>
       )}
     </div>
   );

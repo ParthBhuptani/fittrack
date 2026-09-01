@@ -54,6 +54,16 @@ export const StorageService = {
     await supabase.auth.signOut();
   },
 
+  // Starts the Google sign-in flow. This redirects the whole page to Google,
+  // then back to the app — Supabase handles reading the session from the
+  // returned URL automatically once the page reloads.
+  signInWithGoogle: async (): Promise<void> => {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    });
+  },
+
   // Fetches the currently logged-in user (from Supabase's active session) plus
   // their saved profile row, combined into one User object.
   getCurrentUser: async (): Promise<User | null> => {
@@ -71,15 +81,20 @@ export const StorageService = {
       email: user.email || '',
       profile: profileRow?.profile_data || undefined,
       createdAt: profileRow?.created_at ? new Date(profileRow.created_at).getTime() : Date.now(),
+      displayName: user.user_metadata?.full_name || user.user_metadata?.name || undefined,
     };
   },
 
-  // Saves/updates a user's profile (used after onboarding, or when editing profile later)
+  // Saves/updates a user's profile (used after onboarding, or when editing profile later).
+  // Uses upsert rather than update: email/password users already have a profile row
+  // (created at registration), but Google sign-in users won't have one yet the first
+  // time they save their profile — upsert creates it if missing, updates it if not.
   saveProfile: async (userId: string, profile: UserProfile): Promise<boolean> => {
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { error } = await supabase
       .from('profiles')
-      .update({ name: profile.name, profile_data: profile })
-      .eq('id', userId);
+      .upsert({ id: userId, email: user?.email || null, name: profile.name, profile_data: profile });
 
     if (error) {
       console.error('Failed to save profile:', error.message);
