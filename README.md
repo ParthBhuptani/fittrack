@@ -28,9 +28,11 @@
 - [Tech Stack](#️-tech-stack)
 - [Project Structure](#-project-structure)
 - [Architecture & Security](#-architecture--security)
+- [Performance](#-performance)
 - [Running Locally](#-running-locally)
 - [Deployment](#️-deployment)
 - [Roadmap](#️-roadmap)
+- [License](#-license)
 
 ---
 
@@ -46,7 +48,7 @@ Everything from the workout structure to the meal recipes is generated fresh per
 
 **🔗 [https://fittrack-planner.vercel.app](https://fittrack-planner.vercel.app)**
 
-> 💡 Sign up, fill out your profile, and watch a full 7-day plan get generated in real time — try the AI coach chat afterward too.
+> 💡 Sign up (email or Google), fill out your profile, and watch a full 7-day plan get generated in real time — try the AI coach chat afterward too.
 
 ---
 
@@ -56,15 +58,16 @@ Everything from the workout structure to the meal recipes is generated fresh per
 |---|---|---|
 | 🧬 | **Personalized 7-Day Plans** | Full week of workouts and meals tailored to age, weight, gender, goal, activity level, diet type, allergies, injuries, and available equipment |
 | 🔄 | **Exercise Variations** | Every exercise includes an easier and harder variation, so the plan scales with fitness level |
-| 🍳 | **Full Recipes** | Every meal includes a real ingredient list and step-by-step cooking instructions, not just a name and calorie count |
+| 🍳 | **Full Recipes** | Every meal includes a real ingredient list and step-by-step cooking instructions |
 | 🩹 | **Injury-Aware** | Workouts are generated with the user's stated injuries/conditions factored in |
-| 🤖 | **AI Coach Chat** | In-app chat with context on the user's specific profile and current plan, for follow-up fitness and nutrition questions |
+| 🤖 | **AI Coach Chat** | In-app chat with context on the user's specific profile and current plan |
 | 📊 | **Progress Tracking** | Workout completion and weight logged over time, visualized with interactive charts |
 | 💧 | **Water Tracking** | Daily water intake tracked against a set goal |
 | ⏱️ | **Workout Timers** | Built-in play / pause / reset timers for guided sessions |
-| 🌗 | **Per-Account Dark Mode** | Theme preference is saved to each account and follows the user across devices |
-| 👤 | **Real Accounts** | Secure sign up / log in backed by Supabase Auth, with per-user saved plans, logs, and chat history |
-| 👁️ | **Password Visibility Toggle** | Show/hide password fields on login and signup for easier, error-free typing |
+| 🌗 | **Per-Account Dark Mode** | Theme preference saved to each account, follows the user across devices |
+| 👤 | **Real Accounts** | Secure sign up / log in via email/password or Google, backed by Supabase Auth |
+| 👁️ | **Password Visibility Toggle** | Show/hide password fields on login and signup |
+| 🔑 | **Google Sign-In** | One-click sign-in/sign-up via Google OAuth, with automatic profile-setup routing for first-time Google users |
 
 ---
 
@@ -76,7 +79,7 @@ Everything from the workout structure to the meal recipes is generated fresh per
 | Charts | Recharts |
 | Icons | Lucide React |
 | AI | Google Gemini API |
-| Auth & Database | Supabase (Postgres + Authentication + Row Level Security) |
+| Auth & Database | Supabase (Postgres + Authentication + Row Level Security), Google OAuth |
 | Hosting | Vercel (frontend + serverless functions) |
 
 ---
@@ -86,35 +89,33 @@ Everything from the workout structure to the meal recipes is generated fresh per
 ```
 fittrack/
 ├── api/
-│   └── gemini.ts             # Serverless function — holds the Gemini API keys server-side,
-│                              # handles plan generation + AI chat requests, with automatic
-│                              # fallback to a backup key on failure
+│   └── gemini.ts               # Serverless function — holds the Gemini API keys server-side,
+│                                # handles plan generation + AI chat requests, with automatic
+│                                # fallback to a backup key on failure
 │
-├── components/                # Reusable UI building blocks (buttons, inputs, etc.)
+├── components/
 │   ├── Button.tsx
-│   └── Input.tsx              # Includes show/hide toggle for password fields
+│   ├── Input.tsx                # Includes show/hide toggle for password fields
+│   ├── LandingPage.tsx          # First-paint view — not lazy-loaded
+│   ├── AuthFlow.tsx             # Login / signup / Google sign-in / profile setup (lazy-loaded)
+│   ├── Dashboard.tsx            # Main app shell after login (lazy-loaded)
+│   ├── SettingsView.tsx         # Profile editing, rendered inside Dashboard
+│   └── AnalyticsView.tsx        # Progress charts, rendered inside Dashboard
 │
 ├── services/
-│   ├── geminiService.ts       # Frontend-side client — calls /api/gemini instead of
-│                              # Google's API directly, so the key is never exposed
-│   ├── supabaseClient.ts      # Supabase connection setup
-│   └── storageService.ts      # All auth + database logic — accounts, profiles, plans,
-│                              # logs, chat history, and per-account theme
+│   ├── geminiService.ts         # Frontend client — calls /api/gemini, never touches the real key
+│   ├── supabaseClient.ts        # Supabase connection setup
+│   └── storageService.ts        # All auth + database logic — accounts, profiles, plans,
+│                                 # logs, chat history, per-account theme, Google sign-in
 │
-├── public/                    # Static assets served at the site root
-│   ├── favicon.png
-│   ├── favicon.ico
-│   └── logo.svg
+├── public/                      # Static assets: favicon, logo, OG image, robots.txt, sitemap.xml
 │
-├── App.tsx                    # Main app — routing between landing, auth, profile
-│                              # setup, and dashboard views
-├── index.html                 # Page shell, favicon, title, meta tags
-├── index.tsx                  # React entry point
-├── index.css                  # Global styles
-├── types.ts                   # Shared TypeScript types (UserProfile, WeeklyPlan, etc.)
-├── vite.config.ts
-├── tsconfig.json
-└── package.json
+├── App.tsx                      # Lean orchestrator — session check, routing, top-level state
+├── utils.ts                     # Shared constants and helper functions
+├── index.html                   # Page shell, favicon, title, meta/OG tags
+├── index.tsx                    # React entry point
+├── types.ts                     # Shared TypeScript types
+└── vite.config.ts / tsconfig.json / package.json
 ```
 
 ---
@@ -125,19 +126,27 @@ fittrack/
 
 - A serverless function (`/api/gemini.ts`) holds the Gemini API keys server-side and handles both plan generation and chat requests.
 - The frontend calls this internal endpoint rather than Google's API directly, so the keys are never exposed in the client bundle or visible via dev tools.
-- **Automatic key fallback:** the app is configured with a primary and backup Gemini API key. If a request fails on the primary key (rate limit, quota, temporary outage), it automatically retries on the backup — transparent to the user.
+- **Automatic key fallback:** if a request fails on the primary key (rate limit, quota, temporary outage), it automatically retries on a backup key — transparent to the user.
 
 **Authentication and data are handled by Supabase, not the browser.**
 
-- Real user authentication (Supabase Auth) replaces browser-stored credentials — no plaintext passwords sitting in `localStorage`.
-- All user data — profiles, plans, progress logs, and chat history — lives in a Postgres database, structured across dedicated tables, and follows the account across devices and browsers.
-- **Row Level Security (RLS)** is enabled on every table, enforcing at the database level that a user can only ever read or write their own rows. This isn't just app-level logic — even a direct query against the database with the public API key would be blocked from returning another user's data.
+- Real authentication via Supabase Auth — email/password and Google OAuth — replaces browser-stored credentials.
+- All user data (profiles, plans, progress logs, chat history) lives in Postgres, structured across dedicated tables, and follows the account across devices and browsers.
+- **Row Level Security (RLS)** is enabled on every table, enforcing at the database level that a user can only ever read or write their own rows.
+- **Google sign-in users** skip the normal signup form (since OAuth authenticates immediately), so the app detects a first-time Google user (authenticated, no profile yet) and routes them straight to the profile-setup step before generating their plan.
+
+---
+
+## ⚡ Performance
+
+- The app is **code-split**: the initial bundle only includes the landing page. The login/signup flow and the full dashboard (including the charts library) are fetched on demand via `React.lazy` + `Suspense`, cutting the first-load bundle size roughly in half.
+- A session-check guard prevents the landing page from briefly flashing for returning, already-logged-in users while their session is being verified.
 
 ---
 
 ## 🚀 Running Locally
 
-**Prerequisites:** Node.js, a Supabase project
+**Prerequisites:** Node.js, a Supabase project, a Google OAuth client (for Google sign-in)
 
 ```bash
 npm install
@@ -176,10 +185,34 @@ New features are developed on separate branches and tested on Vercel's auto-gene
 
 ## 🗺️ Roadmap
 
-- [ ] Google Sign-In as an additional login option
-- [ ] Further UI refinements
-- [ ] Code-split the JavaScript bundle to reduce initial load size
+**Security & Robustness**
+- [ ] Password reset / "Forgot password" flow
+- [ ] Rate limiting on `/api/gemini` to prevent quota abuse
+- [ ] Re-enable email confirmation before wider public sharing
+
+**Performance**
+- [ ] Split `AnalyticsView` (charts) out of the Dashboard bundle so `recharts` only loads when the Progress tab is opened
+
+**New Features**
+- [ ] Submit login form on Enter key press
+- [ ] Add real charts to the printed workout/diet report
+- [ ] Photo-based meal logging — upload a food photo, Gemini estimates calories automatically
+- [ ] Support longer plan durations (beyond the current fixed 7 days)
+
+**UX Polish**
+- [ ] General UI refinements
+- [ ] Dedicated mobile responsiveness pass
+
+**Nice-to-Haves**
 - [ ] Custom domain
+- [ ] Basic automated tests
+- [ ] Error tracking (e.g. Sentry)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
 
 ---
 
