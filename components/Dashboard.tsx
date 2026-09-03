@@ -347,6 +347,74 @@ const Dashboard: React.FC<{
         `;
     }).join('') : `<tr><td colspan="4" class="text-center py-4">No data recorded for this period.</td></tr>`;
 
+    // Chronological order (oldest to newest) for the charts below — the table above
+    // stays newest-first, but a chart reading left-to-right should go forward in time.
+    const chronoLogs = [...filteredLogs].reverse();
+    const units = user.profile?.units || 'metric';
+
+    const buildWeightChartSvg = () => {
+      if (chronoLogs.length < 2) {
+        return `<p class="text-sm text-slate-400">Not enough data yet for a weight trend chart.</p>`;
+      }
+      const width = 700, height = 200, padding = 36;
+      const weights = chronoLogs.map(l => toDisplayWeight(l.weight, units));
+      const min = Math.min(...weights);
+      const max = Math.max(...weights);
+      const range = (max - min) || 1;
+      const stepX = (width - padding * 2) / (chronoLogs.length - 1);
+
+      const coords = chronoLogs.map((l, i) => {
+        const x = padding + i * stepX;
+        const y = height - padding - ((toDisplayWeight(l.weight, units) - min) / range) * (height - padding * 2);
+        return { x, y };
+      });
+
+      const points = coords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+      const dots = coords.map(c => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#10b981" />`).join('');
+
+      return `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+          <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="#e2e8f0" stroke-width="1" />
+          <polyline points="${points}" fill="none" stroke="#10b981" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+          ${dots}
+          <text x="${padding}" y="16" font-size="11" fill="#94a3b8">${max} ${getWeightLabel(units)}</text>
+          <text x="${padding}" y="${height - padding + 18}" font-size="11" fill="#94a3b8">${min} ${getWeightLabel(units)}</text>
+        </svg>
+      `;
+    };
+
+    const buildAdherenceChartSvg = () => {
+      if (chronoLogs.length === 0) {
+        return `<p class="text-sm text-slate-400">Not enough data yet for an adherence chart.</p>`;
+      }
+      const width = 700, height = 200, padding = 36;
+      const barGap = 8;
+      const barWidth = Math.max(8, (width - padding * 2) / chronoLogs.length - barGap);
+
+      const bars = chronoLogs.map((l, i) => {
+        const dayPlan = plan.days?.[getPlanDayIndex(new Date(l.date))];
+        let pct = 0;
+        if (dayPlan?.workout?.exercises) {
+          const totalEx = dayPlan.workout.exercises.length || 1;
+          const completedEx = dayPlan.workout.exercises.filter((_, idx) => l.details?.[`exercise-${idx}`]).length;
+          pct = Math.round((completedEx / totalEx) * 100);
+        }
+        const barHeight = ((height - padding * 2) * pct) / 100;
+        const x = padding + i * (barWidth + barGap);
+        const y = height - padding - barHeight;
+        return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="3" fill="#10b981" />`;
+      }).join('');
+
+      return `
+        <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
+          <line x1="${padding}" y1="${height - padding}" x2="${width - padding}" y2="${height - padding}" stroke="#e2e8f0" stroke-width="1" />
+          ${bars}
+          <text x="${padding}" y="16" font-size="11" fill="#94a3b8">100%</text>
+          <text x="${padding}" y="${height - padding + 18}" font-size="11" fill="#94a3b8">0%</text>
+        </svg>
+      `;
+    };
+
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -389,6 +457,18 @@ const Dashboard: React.FC<{
                  <li><strong>Equipment:</strong> ${user.profile?.equipment}</li>
                  <li><strong>Injuries:</strong> ${user.profile?.injuries}</li>
               </ul>
+            </div>
+          </div>
+
+          <h3 class="text-2xl font-bold mb-4">Progress Charts</h3>
+          <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="bg-slate-50 p-6 rounded-xl">
+              <h4 class="font-bold text-sm uppercase tracking-wide text-slate-500 mb-4">Weight Trend</h4>
+              ${buildWeightChartSvg()}
+            </div>
+            <div class="bg-slate-50 p-6 rounded-xl">
+              <h4 class="font-bold text-sm uppercase tracking-wide text-slate-500 mb-4">Workout Adherence</h4>
+              ${buildAdherenceChartSvg()}
             </div>
           </div>
 
