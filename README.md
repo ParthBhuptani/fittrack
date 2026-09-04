@@ -194,7 +194,6 @@ New features are developed on separate branches and tested on Vercel's auto-gene
 - [ ] Split `AnalyticsView` (charts) out of the Dashboard bundle so `recharts` only loads when the Progress tab is opened
 
 **New Features**
-- [ ] Submit login form on Enter key press
 - [ ] Add real charts to the printed workout/diet report
 - [ ] Photo-based meal logging — upload a food photo, Gemini estimates calories automatically
 - [ ] Support longer plan durations (beyond the current fixed 7 days)
