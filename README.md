@@ -202,6 +202,21 @@ New features are developed on separate branches and tested on Vercel's auto-gene
 - [ ] General UI refinements
 - [ ] Dedicated mobile responsiveness pass
 
+**Homepage / Landing Page Redesign**
+- [ ] Polish the hero section with a clearer value proposition
+- [ ] "How it works" section — step-by-step visual walkthrough (profile → AI generates plan → track progress)
+- [ ] Features showcase section — AI coach, recipes, progress tracking, not just plan generation
+- [ ] Social proof / stats section
+- [ ] FAQ section addressing common pre-signup questions
+- [ ] Proper footer with links
+- [ ] Testimonials section (placeholder until there are real users)
+
+**SaaS Readiness**
+- [ ] Onboarding email on signup
+- [ ] A support/contact channel for users
+- [ ] Basic usage analytics (signups, drop-off points)
+- [ ] Plan/tier structure, if this is ever monetized
+
 **Nice-to-Haves**
 - [ ] Custom domain
 - [ ] Basic automated tests
