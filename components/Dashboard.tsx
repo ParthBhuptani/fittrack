@@ -293,7 +293,7 @@ const Dashboard: React.FC<{
       setChatHistory(updatedHistory);
       await StorageService.saveChatHistory(user.id, updatedHistory);
     } catch (error) {
-      setChatHistory(prev => [...prev, { role: 'model', text: "Sorry, I had trouble connecting. Try again." }]);
+      setChatHistory(prev => [...prev, { role: 'model', text: error instanceof Error ? error.message : "Sorry, I had trouble connecting. Try again." }]);
     } finally {
       setIsChatting(false);
     }

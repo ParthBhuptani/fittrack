@@ -69,7 +69,7 @@ const SettingsView: React.FC<{
         const newPlan = await GeminiService.generateWeeklyPlan(profile);
         await StorageService.savePlan(user.id, newPlan);
       } catch (e) {
-        alert("Failed to regenerate plan");
+        alert(e instanceof Error ? e.message : "Failed to regenerate plan");
       }
     }
     
