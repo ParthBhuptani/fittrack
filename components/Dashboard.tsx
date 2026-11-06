@@ -345,28 +345,154 @@ const Dashboard: React.FC<{
             <td class="py-2">${l.waterIntake || 0} ml</td>
           </tr>
         `;
-    }).join('') : `<tr><td colspan="4" class="text-center py-4">No data recorded for this period.</td></tr>`;
+    }).join('') : `<tr><td colspan="4" class="text-center py-4">Nothing logged for this period yet.</td></tr>`;
+
+    // Chronological order (oldest to newest) for the charts below — the table above
+    // stays newest-first, but a chart reading left-to-right should go forward in time.
+    const chronoLogs = [...filteredLogs].reverse();
+    const units = user.profile?.units || 'metric';
+
+    const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string));
+    const shortDate = (d: string) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const weightUnit = getWeightLabel(units);
+
+    // Shared chart frame: gridlines, y-axis ticks, x-axis date labels and both axis titles.
+    const chartFrame = (opts: { yTicks: { value: string; frac: number }[]; xLabels: { text: string; x: number }[]; yTitle: string; xTitle: string; body: string }) => {
+      const W = 700, H = 280, L = 56, R = 20, T = 16, B = 56;
+      const plotH = H - T - B;
+      const grid = opts.yTicks.map(t => {
+        const y = T + plotH - t.frac * plotH;
+        return `<line x1="${L}" y1="${y.toFixed(1)}" x2="${W - R}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-dasharray="3 3" />
+                <text x="${L - 8}" y="${(y + 4).toFixed(1)}" font-size="11" text-anchor="end" fill="#64748b">${t.value}</text>`;
+      }).join('');
+      const xl = opts.xLabels.map(l => `<text x="${l.x.toFixed(1)}" y="${T + plotH + 18}" font-size="11" text-anchor="middle" fill="#64748b">${l.text}</text>`).join('');
+      return `<svg viewBox="0 0 ${W} ${H}" width="100%" xmlns="http://www.w3.org/2000/svg" role="img">
+          ${grid}
+          <line x1="${L}" y1="${T + plotH}" x2="${W - R}" y2="${T + plotH}" stroke="#cbd5e1" />
+          ${opts.body}
+          ${xl}
+          <text x="${(L + W - R) / 2}" y="${H - 8}" font-size="12" text-anchor="middle" fill="#475569">${opts.xTitle}</text>
+          <text transform="translate(14 ${T + plotH / 2}) rotate(-90)" font-size="12" text-anchor="middle" fill="#475569">${opts.yTitle}</text>
+        </svg>`;
+    };
+    const CH = { W: 700, L: 56, R: 20, T: 16, B: 56, H: 280 };
+    const plotW = CH.W - CH.L - CH.R, plotH = CH.H - CH.T - CH.B;
+    // Pick up to ~6 evenly spaced indices so date labels never collide.
+    const labelIdx = (n: number) => {
+      const max = Math.min(n, 6);
+      if (n <= 1) return [0];
+      return Array.from(new Set(Array.from({ length: max }, (_, k) => Math.round((k * (n - 1)) / (max - 1)))));
+    };
+
+    const buildWeightChartSvg = () => {
+      if (chronoLogs.length < 2) {
+        return `<p class="text-sm text-slate-400">Log your weight on at least two days to see a trend.</p>`;
+      }
+      const weights = chronoLogs.map(l => toDisplayWeight(l.weight, units));
+      let lo = Math.floor(Math.min(...weights) - 1), hi = Math.ceil(Math.max(...weights) + 1);
+      if (hi === lo) hi = lo + 1;
+      const n = chronoLogs.length;
+      const xAt = (i: number) => CH.L + (plotW * i) / (n - 1);
+      const yAt = (w: number) => CH.T + plotH - ((w - lo) / (hi - lo)) * plotH;
+      const pts = weights.map((w, i) => ({ x: xAt(i), y: yAt(w) }));
+      const line = pts.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+      const area = `${CH.L},${CH.T + plotH} ${line} ${CH.L + plotW},${CH.T + plotH}`;
+      const dots = pts.map((c, i) => {
+        const label = `${shortDate(chronoLogs[i].date)}: ${weights[i]} ${weightUnit}`;
+        return `<circle class="chart-point" cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" fill="#fff" stroke="#10b981" stroke-width="2.5" onmouseenter="showChartTooltip(event, '${label}')" onmouseleave="hideChartTooltip()" />`;
+      }).join('');
+      const body = `<polygon points="${area}" fill="#10b981" fill-opacity="0.12" /><polyline points="${line}" fill="none" stroke="#10b981" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />${dots}`;
+      return chartFrame({
+        yTicks: [0, 0.25, 0.5, 0.75, 1].map(f => ({ frac: f, value: (lo + f * (hi - lo)).toFixed(1) })),
+        xLabels: labelIdx(n).map(i => ({ x: xAt(i), text: shortDate(chronoLogs[i].date) })),
+        yTitle: `Weight (${weightUnit})`, xTitle: 'Date', body,
+      });
+    };
+
+    const adherencePct = (l: any) => {
+      const dayPlan = plan.days?.[getPlanDayIndex(new Date(l.date))];
+      const ex = dayPlan?.workout?.exercises;
+      if (!ex) return 0;
+      const total = ex.length || 1;
+      return Math.round((ex.filter((_: any, idx: number) => l.details?.[`exercise-${idx}`]).length / total) * 100);
+    };
+
+    const buildAdherenceChartSvg = () => {
+      if (chronoLogs.length === 0) {
+        return `<p class="text-sm text-slate-400">No workout data in this period yet.</p>`;
+      }
+      const n = chronoLogs.length;
+      const slot = plotW / n;
+      const barW = Math.max(6, Math.min(40, slot * 0.6));
+      const bars = chronoLogs.map((l, i) => {
+        const pct = adherencePct(l);
+        const h = (plotH * pct) / 100;
+        const x = CH.L + slot * i + (slot - barW) / 2;
+        const label = `${shortDate(l.date)}: ${pct}% of workout done`;
+        return `<rect class="chart-bar" x="${x.toFixed(1)}" y="${(CH.T + plotH - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" rx="3" fill="#10b981" onmouseenter="showChartTooltip(event, '${label}')" onmouseleave="hideChartTooltip()" />`;
+      }).join('');
+      return chartFrame({
+        yTicks: [0, 0.25, 0.5, 0.75, 1].map(f => ({ frac: f, value: `${Math.round(f * 100)}%` })),
+        xLabels: labelIdx(n).map(i => ({ x: CH.L + slot * i + slot / 2, text: shortDate(chronoLogs[i].date) })),
+        yTitle: 'Workout completed (%)', xTitle: 'Date', body: bars,
+      });
+    };
+
+    const showCharts = range !== 'daily';
 
     const htmlContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>FitTrack Report - ${user.profile?.name}</title>
+          <title>FitTrack Report - ${esc(user.profile?.name)}</title>
           <script src="https://cdn.tailwindcss.com"></script>
+          <script>
+            tailwind.config = { theme: { extend: { colors: { brand: { 50:'#ecfdf5', 100:'#d1fae5', 500:'#10b981', 600:'#059669', 700:'#047857' } } } } };
+          </script>
           <style>
             @media print {
-              body { -webkit-print-color-adjust: exact; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              #chart-tooltip, .no-print { display: none !important; }
+              .report-card { break-inside: avoid; }
+            }
+            .print-bar { position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 40px; margin: -40px -40px 32px; background: #ffffff; border-bottom: 1px solid #e2e8f0; }
+            .print-btn { background: #059669; color: #ffffff; border: 0; border-radius: 10px; padding: 10px 18px; font-weight: 700; font-size: 14px; cursor: pointer; }
+            .print-btn:hover { background: #047857; }
+            .chart-point, .chart-bar {
+              cursor: pointer;
+              transition: r 0.15s ease, opacity 0.15s ease;
+            }
+            .chart-point:hover { r: 6; }
+            .chart-bar:hover { opacity: 0.75; }
+            #chart-tooltip {
+              position: fixed;
+              display: none;
+              pointer-events: none;
+              background: #1e293b;
+              color: white;
+              font-size: 12px;
+              font-weight: 600;
+              padding: 6px 10px;
+              border-radius: 6px;
+              white-space: nowrap;
+              z-index: 50;
+              transform: translate(-50%, -130%);
             }
           </style>
         </head>
         <body class="p-10 font-sans text-slate-800">
+          <div id="chart-tooltip"></div>
+          <div class="print-bar no-print">
+            <span style="font-size:13px;color:#64748b;">Report preview${showCharts ? ' · hover a chart point for exact values' : ''}</span>
+            <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+          </div>
           <div class="flex justify-between items-center mb-10 border-b pb-6">
             <div>
               <h1 class="text-4xl font-bold text-brand-600">FitTrack</h1>
               <p class="text-slate-500 mt-1">Personal Fitness Report</p>
             </div>
             <div class="text-right">
-              <h2 class="text-xl font-bold">${user.profile?.name}</h2>
+              <h2 class="text-xl font-bold">${esc(user.profile?.name)}</h2>
               <p class="text-sm text-slate-500">Generated on ${today.toLocaleDateString()}</p>
             </div>
           </div>
@@ -384,13 +510,28 @@ const Dashboard: React.FC<{
             </div>
             <div class="bg-slate-50 p-6 rounded-xl">
               <h3 class="font-bold text-lg mb-4 text-brand-700">Plan Summary</h3>
-              <p class="text-sm italic mb-2">"${plan.weeklySummary}"</p>
+              <p class="text-sm italic mb-2">"${esc(plan.weeklySummary)}"</p>
               <ul class="space-y-2 text-sm mt-4">
-                 <li><strong>Equipment:</strong> ${user.profile?.equipment}</li>
-                 <li><strong>Injuries:</strong> ${user.profile?.injuries}</li>
+                 <li><strong>Equipment:</strong> ${esc(user.profile?.equipment)}</li>
+                 <li><strong>Injuries:</strong> ${esc(user.profile?.injuries)}</li>
               </ul>
             </div>
           </div>
+
+          ${showCharts ? `
+          <h3 class="text-2xl font-bold mb-4">Progress</h3>
+          <div class="grid grid-cols-1 gap-8 mb-10">
+            <div class="report-card bg-slate-50 p-6 rounded-xl">
+              <h4 class="font-bold text-base text-slate-700 mb-1">Weight over time</h4>
+              <p class="text-xs text-slate-400 mb-3">Each point is a day you logged your weight.</p>
+              ${buildWeightChartSvg()}
+            </div>
+            <div class="report-card bg-slate-50 p-6 rounded-xl">
+              <h4 class="font-bold text-base text-slate-700 mb-1">Workout completion</h4>
+              <p class="text-xs text-slate-400 mb-3">Share of each day's planned exercises you ticked off.</p>
+              ${buildAdherenceChartSvg()}
+            </div>
+          </div>` : ''}
 
           <h3 class="text-2xl font-bold mb-4">${titleRange}</h3>
           <table class="w-full text-left mb-10 text-sm">
@@ -412,9 +553,16 @@ const Dashboard: React.FC<{
           </div>
 
           <script>
-            setTimeout(() => {
-              window.print();
-            }, 500);
+            function showChartTooltip(evt, text) {
+              const tooltip = document.getElementById('chart-tooltip');
+              tooltip.textContent = text;
+              tooltip.style.left = evt.clientX + 'px';
+              tooltip.style.top = evt.clientY + 'px';
+              tooltip.style.display = 'block';
+            }
+            function hideChartTooltip() {
+              document.getElementById('chart-tooltip').style.display = 'none';
+            }
           </script>
         </body>
       </html>
