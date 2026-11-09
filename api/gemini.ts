@@ -136,6 +136,18 @@ function validatePayload(action: string, payload: any): string | null {
   return null;
 }
 
+// A plan is only accepted if every day has a workout and at least one meal. The model is
+// told to include everything, but this guarantees we never save (or show) a half plan.
+function isCompletePlan(plan: any): boolean {
+  if (!plan || !Array.isArray(plan.days) || plan.days.length !== 7) return false;
+  return plan.days.every((d: any) =>
+    d &&
+    d.workout && Array.isArray(d.workout.exercises) &&
+    d.diet && Array.isArray(d.diet.meals) && d.diet.meals.length > 0 &&
+    d.diet.meals.every((m: any) => m && typeof m.name === 'string' && m.name.length > 0)
+  );
+}
+
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -198,23 +210,27 @@ export default async function handler(req: any, res: any) {
             responseMimeType: "application/json",
             responseSchema: {
               type: Type.OBJECT,
+              required: ["weeklySummary", "days"],
               properties: {
                 weeklySummary: { type: Type.STRING, description: "A motivational summary of the plan" },
                 days: {
                   type: Type.ARRAY,
                   items: {
                     type: Type.OBJECT,
+                    required: ["dayName", "focus", "workout", "diet"],
                     properties: {
                       dayName: { type: Type.STRING },
                       focus: { type: Type.STRING, description: "Main focus, e.g., Upper Body, Cardio" },
                       workout: {
                         type: Type.OBJECT,
+                        required: ["durationMinutes", "exercises"],
                         properties: {
                           durationMinutes: { type: Type.NUMBER },
                           exercises: {
                             type: Type.ARRAY,
                             items: {
                               type: Type.OBJECT,
+                              required: ["name", "sets", "reps", "tips", "variations"],
                               properties: {
                                 name: { type: Type.STRING },
                                 sets: { type: Type.STRING },
@@ -237,12 +253,14 @@ export default async function handler(req: any, res: any) {
                       },
                       diet: {
                         type: Type.OBJECT,
+                        required: ["totalCalories", "meals"],
                         properties: {
                           totalCalories: { type: Type.NUMBER },
                           meals: {
                             type: Type.ARRAY,
                             items: {
                               type: Type.OBJECT,
+                              required: ["type", "name", "calories", "recipeStub", "ingredients", "instructions"],
                               properties: {
                                 type: { type: Type.STRING, enum: ["Breakfast", "Lunch", "Dinner", "Snack"] },
                                 name: { type: Type.STRING },
@@ -273,7 +291,10 @@ export default async function handler(req: any, res: any) {
 
         const jsonText = response.text;
         if (!jsonText) throw new Error("Failed to generate plan");
-        return JSON.parse(jsonText);
+        const plan = JSON.parse(jsonText);
+        // Not a temporary error, so withFallback gives the backup key one more try, then stops.
+        if (!isCompletePlan(plan)) throw new Error("The model returned an incomplete plan");
+        return plan;
       });
 
       return res.status(200).json({ ...parsed, generatedAt: Date.now() });
