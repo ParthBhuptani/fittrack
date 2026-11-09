@@ -1,13 +1,36 @@
 import { UserProfile, WeeklyPlan } from '../types';
+import { supabase } from './supabaseClient';
 
+// Sends a request to our own serverless function. The user's login token goes along in the
+// Authorization header so the server can check who is asking. Every error thrown from here
+// carries a message that is safe to show to the user as-is.
 async function callApi(action: string, payload: any) {
-  const res = await fetch('/api/gemini', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, payload })
-  });
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  let res: Response;
+  try {
+    res = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ action, payload }),
+    });
+  } catch {
+    throw new Error("Couldn't reach the server. Check your connection and try again.");
+  }
+
   if (!res.ok) {
-    throw new Error('Request failed');
+    let message = 'Something went wrong. Please try again.';
+    try {
+      const body = await res.json();
+      if (body?.error && res.status < 500) message = body.error;
+    } catch {
+      // response had no JSON body — keep the generic message
+    }
+    throw new Error(message);
   }
   return res.json();
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, UserProfile, Goal, DietType } from '../types';
+import { User, UserProfile, WeeklyPlan, Goal, DietType } from '../types';
 import { StorageService } from '../services/storageService';
 import { GeminiService } from '../services/geminiService';
 import { Button } from './Button';
@@ -10,8 +10,9 @@ import { DIETARY_RESTRICTIONS, toDisplayWeight, fromDisplayWeight, getWeightLabe
 const SettingsView: React.FC<{ 
   user: User; 
   onUpdateProfile: (updatedProfile: UserProfile) => void; 
+  onUpdatePlan: (updatedPlan: WeeklyPlan) => void | Promise<void>;
   onLogout: () => void;
-}> = ({ user, onUpdateProfile, onLogout }) => {
+}> = ({ user, onUpdateProfile, onUpdatePlan, onLogout }) => {
   const [profile, setProfile] = useState<UserProfile>(user.profile!);
   const [isSaving, setIsSaving] = useState(false);
   const [needsRegeneration, setNeedsRegeneration] = useState(false);
@@ -64,22 +65,25 @@ const SettingsView: React.FC<{
 
   const handleSave = async (regenerate: boolean) => {
     setIsSaving(true);
-    if (regenerate) {
-      try {
-        const newPlan = await GeminiService.generateWeeklyPlan(profile);
-        await StorageService.savePlan(user.id, newPlan);
-      } catch (e) {
-        alert("Failed to regenerate plan");
-      }
-    }
-    
+    // Save the profile first so it is kept even if regenerating the plan fails.
     onUpdateProfile(profile);
-    
-    if (regenerate) {
-       window.location.reload();
+
+    if (!regenerate) {
+      setIsSaving(false);
+      alert("Profile saved!");
+      return;
+    }
+
+    try {
+      const newPlan = await GeminiService.generateWeeklyPlan(profile);
+      // onUpdatePlan lives in App, so it still works if you switched tabs while waiting,
+      // and the new plan appears without reloading the page.
+      await onUpdatePlan(newPlan);
+      alert("Profile saved and your new plan is ready!");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Failed to regenerate plan");
     }
     setIsSaving(false);
-    alert("Profile saved!");
   };
 
   const handleWeightChange = (val: number) => {

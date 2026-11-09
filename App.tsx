@@ -112,7 +112,7 @@ export default function App() {
         await loadUserData(userData);
       } catch (error) {
         console.error("Failed to generate plan", error);
-        alert("Something went wrong generating your plan. Please try again.");
+        alert(error instanceof Error ? error.message : "Something went wrong generating your plan. Please try again.");
       }
     }
   };

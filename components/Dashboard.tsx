@@ -52,9 +52,9 @@ import {
   toDisplayHeight
 } from '../utils';
 
-const Dashboard: React.FC<{ 
-  user: User; 
-  plan: WeeklyPlan; 
+const Dashboard: React.FC<{
+  user: User;
+  plan: WeeklyPlan;
   onLogout: () => void;
   logs: ProgressLog[];
   onLogProgress: (log: ProgressLog) => void;
@@ -117,7 +117,7 @@ const Dashboard: React.FC<{
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
-       if (reportMenuRef.current && !reportMenuRef.current.contains(event.target as Node)) {
+      if (reportMenuRef.current && !reportMenuRef.current.contains(event.target as Node)) {
         setShowReportMenu(false);
       }
     }
@@ -130,22 +130,22 @@ const Dashboard: React.FC<{
 
   // --- COMPUTED DATE STATE ---
   const isToday = useMemo(() => formatDate(selectedDate) === formatDate(new Date()), [selectedDate]);
-  
+
   // Mapping current date to one of the 7 plan days
   const planDayIndex = useMemo(() => getPlanDayIndex(selectedDate), [selectedDate]);
-  
+
   // Get existing log for selected date to show checked state
-  const selectedDateLog = useMemo(() => 
-    logs.find(l => l.date === formatDate(selectedDate)), 
-  [logs, selectedDate]);
+  const selectedDateLog = useMemo(() =>
+    logs.find(l => l.date === formatDate(selectedDate)),
+    [logs, selectedDate]);
 
   // Streak Calculation
   const streakCount = useMemo(() => {
     if (!logs.length) return 0;
-    
+
     // Sort unique dates descending
     const uniqueDates = Array.from(new Set(logs.map(l => l.date))).sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-    
+
     const today = formatDate(new Date());
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -164,13 +164,13 @@ const Dashboard: React.FC<{
     }
 
     while (true) {
-       const dateStr = formatDate(checkDate);
-       if (uniqueDates.includes(dateStr)) {
-         streak++;
-         checkDate.setDate(checkDate.getDate() - 1);
-       } else {
-         break;
-       }
+      const dateStr = formatDate(checkDate);
+      if (uniqueDates.includes(dateStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
     return streak;
   }, [logs]);
@@ -221,26 +221,26 @@ const Dashboard: React.FC<{
 
   // Initialize Log Data based on today or existing logs
   useEffect(() => {
-     const dateStr = formatDate(selectedDate);
-     const entry = logs.find(l => l.date === dateStr);
-     
-     if (entry) {
-       setLogWeight(toDisplayWeight(entry.weight, user.profile?.units || 'metric'));
-       setLogWorkout(entry.workoutCompleted);
-       setWaterIntake(entry.waterIntake || 0);
-     } else {
-       const lastLog = logs[logs.length - 1];
-       const weightToUse = lastLog ? lastLog.weight : (user.profile?.weight || 0);
-       setLogWeight(toDisplayWeight(weightToUse, user.profile?.units || 'metric'));
-       setLogWorkout(false);
-       setWaterIntake(0);
-     }
+    const dateStr = formatDate(selectedDate);
+    const entry = logs.find(l => l.date === dateStr);
+
+    if (entry) {
+      setLogWeight(toDisplayWeight(entry.weight, user.profile?.units || 'metric'));
+      setLogWorkout(entry.workoutCompleted);
+      setWaterIntake(entry.waterIntake || 0);
+    } else {
+      const lastLog = logs[logs.length - 1];
+      const weightToUse = lastLog ? lastLog.weight : (user.profile?.weight || 0);
+      setLogWeight(toDisplayWeight(weightToUse, user.profile?.units || 'metric'));
+      setLogWorkout(false);
+      setWaterIntake(0);
+    }
   }, [logs, user.profile, selectedDate]);
 
   const handleSaveLog = (partialLog: Partial<ProgressLog> = {}) => {
     if (!isToday) {
-        alert("You can only log stats for today.");
-        return;
+      alert("You can only log stats for today.");
+      return;
     }
 
     const dateStr = formatDate(selectedDate);
@@ -250,7 +250,7 @@ const Dashboard: React.FC<{
 
     onLogProgress({
       date: dateStr,
-      weight: weightToSaveKg, 
+      weight: weightToSaveKg,
       workoutCompleted: logWorkout,
       waterIntake: waterIntake,
       details: existing.details,
@@ -261,8 +261,8 @@ const Dashboard: React.FC<{
 
   const updateWater = (amount: number) => {
     if (!isToday) {
-         alert("You can only log water for today.");
-         return;
+      alert("You can only log water for today.");
+      return;
     }
     const newAmount = Math.max(0, waterIntake + amount);
     setWaterIntake(newAmount);
@@ -271,7 +271,7 @@ const Dashboard: React.FC<{
 
   const getSearchLink = (query: string, type: 'video' | 'recipe') => {
     const q = encodeURIComponent(query + (type === 'video' ? ' exercise form' : ' recipe'));
-    return type === 'video' 
+    return type === 'video'
       ? `https://www.youtube.com/results?search_query=${q}`
       : `https://www.google.com/search?q=${q}`;
   };
@@ -293,7 +293,7 @@ const Dashboard: React.FC<{
       setChatHistory(updatedHistory);
       await StorageService.saveChatHistory(user.id, updatedHistory);
     } catch (error) {
-      setChatHistory(prev => [...prev, { role: 'model', text: "Sorry, I had trouble connecting. Try again." }]);
+      setChatHistory(prev => [...prev, { role: 'model', text: error instanceof Error ? error.message : "Sorry, I had trouble connecting. Try again." }]);
     } finally {
       setIsChatting(false);
     }
@@ -312,32 +312,32 @@ const Dashboard: React.FC<{
     let titleRange = "";
 
     if (range === 'daily') {
-        const todayStr = formatDate(today);
-        filteredLogs = filteredLogs.filter(l => l.date === todayStr);
-        titleRange = "Daily Report";
+      const todayStr = formatDate(today);
+      filteredLogs = filteredLogs.filter(l => l.date === todayStr);
+      titleRange = "Daily Report";
     } else if (range === 'weekly') {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 7);
-        filteredLogs = filteredLogs.filter(l => new Date(l.date) >= cutoff);
-        titleRange = "Weekly Report (Last 7 Days)";
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 7);
+      filteredLogs = filteredLogs.filter(l => new Date(l.date) >= cutoff);
+      titleRange = "Weekly Report (Last 7 Days)";
     } else {
-        const cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 30);
-        filteredLogs = filteredLogs.filter(l => new Date(l.date) >= cutoff);
-        titleRange = "Monthly Report (Last 30 Days)";
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      filteredLogs = filteredLogs.filter(l => new Date(l.date) >= cutoff);
+      titleRange = "Monthly Report (Last 30 Days)";
     }
 
     const logsHtml = filteredLogs.length > 0 ? filteredLogs.map(l => {
-         const dayPlan = plan.days?.[getPlanDayIndex(new Date(l.date))];
-         
-         let workoutPct = 0;
-         if (dayPlan?.workout?.exercises) {
-             const totalEx = dayPlan.workout.exercises.length || 1;
-             const completedEx = dayPlan.workout.exercises.filter((_, idx) => l.details?.[`exercise-${idx}`]).length;
-             workoutPct = Math.round((completedEx/totalEx)*100);
-         }
+      const dayPlan = plan.days?.[getPlanDayIndex(new Date(l.date))];
 
-         return `
+      let workoutPct = 0;
+      if (dayPlan?.workout?.exercises) {
+        const totalEx = dayPlan.workout.exercises.length || 1;
+        const completedEx = dayPlan.workout.exercises.filter((_, idx) => l.details?.[`exercise-${idx}`]).length;
+        workoutPct = Math.round((completedEx / totalEx) * 100);
+      }
+
+      return `
           <tr class="border-b">
             <td class="py-2">${l.date}</td>
             <td class="py-2">${toDisplayWeight(l.weight, user.profile?.units || 'metric')} ${getWeightLabel(user.profile?.units || 'metric')}</td>
@@ -574,8 +574,8 @@ const Dashboard: React.FC<{
 
   const toggleItemCompletion = (type: 'exercise' | 'meal', index: number) => {
     if (!isToday) {
-        alert("You cannot modify past or future records.");
-        return;
+      alert("You cannot modify past or future records.");
+      return;
     }
 
     const itemId = `${type}-${index}`;
@@ -583,7 +583,7 @@ const Dashboard: React.FC<{
     const existingLog = logs.find(l => l.date === dateStr);
     const details = existingLog?.details || {};
     const newStatus = !details[itemId];
-    
+
     // We save current state values, ensuring weight is consistent
     handleSaveLog({ details: { ...details, [itemId]: newStatus } });
   };
@@ -592,20 +592,20 @@ const Dashboard: React.FC<{
     // Calculate progress for SELECTED date based on Logs
     const dayPlan = plan.days?.[planDayIndex];
     if (!dayPlan) return 0;
-    
+
     const totalTasks = (dayPlan.workout?.exercises?.length || 0) + (dayPlan.diet?.meals?.length || 0);
-    
+
     const details = selectedDateLog?.details || {};
     const completedTasks = Object.values(details).filter(v => v).length;
-    
+
     return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   })();
 
   const handleProfileClick = () => {
     if (window.innerWidth < 768) {
-       setActiveTab('settings');
+      setActiveTab('settings');
     } else {
-       setShowUserMenu(!showUserMenu);
+      setShowUserMenu(!showUserMenu);
     }
   };
 
@@ -618,7 +618,7 @@ const Dashboard: React.FC<{
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    const startingDayIndex = firstDay.getDay(); 
+    const startingDayIndex = firstDay.getDay();
 
     const days = [];
     for (let i = 0; i < startingDayIndex; i++) days.push(null);
@@ -627,50 +627,50 @@ const Dashboard: React.FC<{
     return (
       <div ref={calendarRef} className="absolute top-14 left-0 z-50 animate-fade-in w-72 sm:w-80">
         <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 shadow-xl border border-slate-100 dark:border-slate-700">
-           <div className="flex justify-between items-center mb-4">
-              <span className="font-bold dark:text-white">
-                {viewDate.toLocaleString('default', { month: 'short', year: 'numeric' })}
-              </span>
-              <div className="flex gap-1">
-                <button onClick={() => setViewDate(new Date(year, month - 1, 1))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button onClick={() => setViewDate(new Date(year, month + 1, 1))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-           </div>
+          <div className="flex justify-between items-center mb-4">
+            <span className="font-bold dark:text-white">
+              {viewDate.toLocaleString('default', { month: 'short', year: 'numeric' })}
+            </span>
+            <div className="flex gap-1">
+              <button onClick={() => setViewDate(new Date(year, month - 1, 1))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button onClick={() => setViewDate(new Date(year, month + 1, 1))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
-           <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
-           </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-400 mb-2">
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => <div key={d}>{d}</div>)}
+          </div>
 
-           <div className="grid grid-cols-7 gap-1">
-              {days.map((d, i) => {
-                if (!d) return <div key={i} />;
-                
-                const dateStr = formatDate(d);
-                const hasLog = logs.some(l => l.date === dateStr);
-                const isSelected = formatDate(d) === formatDate(selectedDate);
-                const isTodayDate = formatDate(d) === formatDate(new Date());
+          <div className="grid grid-cols-7 gap-1">
+            {days.map((d, i) => {
+              if (!d) return <div key={i} />;
 
-                return (
-                  <button
-                    key={i}
-                    onClick={() => { setSelectedDate(d); setShowCalendar(false); }}
-                    className={`aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all text-xs
+              const dateStr = formatDate(d);
+              const hasLog = logs.some(l => l.date === dateStr);
+              const isSelected = formatDate(d) === formatDate(selectedDate);
+              const isTodayDate = formatDate(d) === formatDate(new Date());
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => { setSelectedDate(d); setShowCalendar(false); }}
+                  className={`aspect-square rounded-lg flex flex-col items-center justify-center relative transition-all text-xs
                       ${isSelected ? 'bg-brand-600 text-white' : 'hover:bg-brand-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}
                       ${isTodayDate && !isSelected ? 'border border-brand-500' : ''}
                     `}
-                  >
-                    {d.getDate()}
-                    {hasLog && (
-                      <div className={`w-1 h-1 rounded-full mt-0.5 ${isSelected ? 'bg-white' : 'bg-brand-500'}`}></div>
-                    )}
-                  </button>
-                );
-              })}
-           </div>
+                >
+                  {d.getDate()}
+                  {hasLog && (
+                    <div className={`w-1 h-1 rounded-full mt-0.5 ${isSelected ? 'bg-white' : 'bg-brand-500'}`}></div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -678,43 +678,43 @@ const Dashboard: React.FC<{
 
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans transition-colors duration-300">
-      
+
       {/* Log Progress Modal */}
       {showLogModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 dark:border-slate-700">
-             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-brand-500" /> Log Today's Stats
-                </h3>
-                <button 
-                  onClick={() => setShowLogModal(false)}
-                  className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-                >
-                   <X className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-                </button>
-             </div>
-             
-             <div className="space-y-4">
-                <Input 
-                  label={`Current Weight (${getWeightLabel(user.profile?.units || 'metric')})`} 
-                  type="number" 
-                  value={logWeight} 
-                  onChange={(e) => setLogWeight(Number(e.target.value))}
-                  icon={<Scale size={18} />}
-                />
-                
-                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl cursor-pointer" onClick={() => setLogWorkout(!logWorkout)}>
-                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${logWorkout ? 'bg-brand-500 border-brand-500' : 'border-slate-300 dark:border-slate-500'}`}>
-                      {logWorkout && <CheckCircle2 className="w-4 h-4 text-white" />}
-                   </div>
-                   <span className="font-medium text-slate-700 dark:text-slate-300">Workout Completed?</span>
-                </div>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
+                <Scale className="w-5 h-5 text-brand-500" /> Log Today's Stats
+              </h3>
+              <button
+                onClick={() => setShowLogModal(false)}
+                className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4 text-slate-500 dark:text-slate-300" />
+              </button>
+            </div>
 
-                <Button onClick={() => handleSaveLog()} className="w-full mt-4">
-                  Save Progress
-                </Button>
-             </div>
+            <div className="space-y-4">
+              <Input
+                label={`Current Weight (${getWeightLabel(user.profile?.units || 'metric')})`}
+                type="number"
+                value={logWeight}
+                onChange={(e) => setLogWeight(Number(e.target.value))}
+                icon={<Scale size={18} />}
+              />
+
+              <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl cursor-pointer" onClick={() => setLogWorkout(!logWorkout)}>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${logWorkout ? 'bg-brand-500 border-brand-500' : 'border-slate-300 dark:border-slate-500'}`}>
+                  {logWorkout && <CheckCircle2 className="w-4 h-4 text-white" />}
+                </div>
+                <span className="font-medium text-slate-700 dark:text-slate-300">Workout Completed?</span>
+              </div>
+
+              <Button onClick={() => handleSaveLog()} className="w-full mt-4">
+                Save Progress
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -728,7 +728,7 @@ const Dashboard: React.FC<{
           <h1 className="text-xl font-bold dark:text-white hidden md:block tracking-tight">FitTrack</h1>
         </div>
         <div className="flex items-center gap-3">
-          
+
           {/* Streak Counter */}
           <div className="flex items-center gap-1.5 mr-2 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 rounded-full border border-orange-100 dark:border-orange-800/30">
             <Flame className={`w-4 h-4 text-orange-500 ${streakCount > 0 ? 'animate-pulse' : ''} fill-current`} />
@@ -736,21 +736,21 @@ const Dashboard: React.FC<{
           </div>
 
           <div className="relative" ref={reportMenuRef}>
-             <Button variant="outline" onClick={() => setShowReportMenu(!showReportMenu)} className="hidden sm:flex text-sm py-2 h-9">
-               <Printer className="w-4 h-4 mr-2" /> Report
-             </Button>
-             {showReportMenu && (
-                 <div className="absolute top-10 right-0 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in">
-                    <button onClick={() => generatePDFReport('daily')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Daily Report</button>
-                    <button onClick={() => generatePDFReport('weekly')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Weekly Report</button>
-                    <button onClick={() => generatePDFReport('monthly')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Monthly Report</button>
-                 </div>
-             )}
+            <Button variant="outline" onClick={() => setShowReportMenu(!showReportMenu)} className="hidden sm:flex text-sm py-2 h-9">
+              <Printer className="w-4 h-4 mr-2" /> Report
+            </Button>
+            {showReportMenu && (
+              <div className="absolute top-10 right-0 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in">
+                <button onClick={() => generatePDFReport('daily')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Daily Report</button>
+                <button onClick={() => generatePDFReport('weekly')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Weekly Report</button>
+                <button onClick={() => generatePDFReport('monthly')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Monthly Report</button>
+              </div>
+            )}
           </div>
-          
+
           <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block"></div>
-          
-           <button 
+
+          <button
             onClick={toggleTheme}
             className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
             title="Toggle Dark Mode"
@@ -760,7 +760,7 @@ const Dashboard: React.FC<{
 
           {/* User Profile Menu */}
           <div className="relative" ref={userMenuRef}>
-            <button 
+            <button
               onClick={handleProfileClick}
               className="flex items-center gap-2 mr-2 hover:opacity-80 transition-opacity"
             >
@@ -768,27 +768,27 @@ const Dashboard: React.FC<{
                 {user.profile?.name.charAt(0)}
               </div>
               <div className="hidden md:block text-left">
-                 <span className="block text-sm font-medium dark:text-slate-300 leading-none">{user.profile?.name}</span>
-                 <span className="text-[10px] text-slate-400">View Profile</span>
+                <span className="block text-sm font-medium dark:text-slate-300 leading-none">{user.profile?.name}</span>
+                <span className="text-[10px] text-slate-400">View Profile</span>
               </div>
             </button>
 
             {/* Dropdown Menu (Desktop) */}
             {showUserMenu && (
               <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 animate-fade-in z-50 hidden md:block">
-                 <button 
-                   onClick={() => { setActiveTab('settings'); setShowUserMenu(false); }}
-                   className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
-                 >
-                    <Settings className="w-4 h-4" /> Settings
-                 </button>
-                 <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-                 <button 
-                   onClick={onLogout}
-                   className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                 >
-                    <LogOut className="w-4 h-4" /> Log Out
-                 </button>
+                <button
+                  onClick={() => { setActiveTab('settings'); setShowUserMenu(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
+                >
+                  <Settings className="w-4 h-4" /> Settings
+                </button>
+                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                <button
+                  onClick={onLogout}
+                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" /> Log Out
+                </button>
               </div>
             )}
           </div>
@@ -810,8 +810,8 @@ const Dashboard: React.FC<{
               key={item.id}
               onClick={() => setActiveTab(item.id as any)}
               className={`flex flex-col md:flex-row items-center md:px-6 py-2 md:py-3 w-full transition-all duration-200 group
-                ${activeTab === item.id 
-                  ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/10 border-t-2 md:border-t-0 md:border-r-4 border-brand-600 dark:border-brand-400' 
+                ${activeTab === item.id
+                  ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/10 border-t-2 md:border-t-0 md:border-r-4 border-brand-600 dark:border-brand-400'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-t-2 md:border-t-0 md:border-r-4 border-transparent'}`}
             >
               <item.icon className={`w-6 h-6 md:mr-3 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'fill-current opacity-20' : ''}`} />
@@ -822,39 +822,39 @@ const Dashboard: React.FC<{
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 p-4 md:p-8 pb-24 md:pb-8 relative">
-          
+
           {/* Day Selector (Common for Workout/Diet/Overview) */}
           {(activeTab === 'workout' || activeTab === 'diet' || activeTab === 'overview') && (
             <div className="max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-               <div className="flex items-center gap-4 bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
-                   <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-                      <ChevronLeft className="w-5 h-5" />
-                   </button>
-                   
-                   <div className="flex flex-col items-center cursor-pointer px-2" onClick={() => setShowCalendar(!showCalendar)}>
-                      <div className="flex items-center gap-2">
-                         <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{getDayName(selectedDate)}</p>
-                         <CalendarIcon className="w-3 h-3 text-brand-500" />
-                      </div>
-                      <p className="font-bold text-slate-900 dark:text-white">{formatDate(selectedDate)}</p>
-                   </div>
-                   
-                   <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-                      <ChevronRight className="w-5 h-5" />
-                   </button>
+              <div className="flex items-center gap-4 bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
+                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
 
-                   {/* Calendar Dropdown */}
-                   {showCalendar && <CalendarPopover />}
-               </div>
+                <div className="flex flex-col items-center cursor-pointer px-2" onClick={() => setShowCalendar(!showCalendar)}>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{getDayName(selectedDate)}</p>
+                    <CalendarIcon className="w-3 h-3 text-brand-500" />
+                  </div>
+                  <p className="font-bold text-slate-900 dark:text-white">{formatDate(selectedDate)}</p>
+                </div>
 
-               <div className="flex items-center gap-2">
-                 <button 
+                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+
+                {/* Calendar Dropdown */}
+                {showCalendar && <CalendarPopover />}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
                   onClick={() => { setSelectedDate(new Date()); }}
                   className="text-sm text-brand-600 font-medium hover:underline"
-                 >
-                   Jump to Today
-                 </button>
-               </div>
+                >
+                  Jump to Today
+                </button>
+              </div>
             </div>
           )}
 
@@ -871,13 +871,13 @@ const Dashboard: React.FC<{
                     {isToday ? "Let's crush today," : "Plan for"} {user.profile?.name.split(' ')[0]}!
                   </h2>
                   <p className="text-brand-100 text-lg mb-6 max-w-xl">
-                    Focus for {getDayName(selectedDate)}: <span className="font-bold text-white">{plan.days?.[planDayIndex]?.focus || 'Rest'}</span>. 
+                    Focus for {getDayName(selectedDate)}: <span className="font-bold text-white">{plan.days?.[planDayIndex]?.focus || 'Rest'}</span>.
                     {isToday ? "Stay consistent!" : "Prepare ahead."}
                   </p>
-                  
+
                   <div className="flex flex-wrap items-end gap-6">
                     <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 relative">
-                      {!isToday && <div className="absolute top-2 right-2 opacity-50"><Lock className="w-3 h-3"/></div>}
+                      {!isToday && <div className="absolute top-2 right-2 opacity-50"><Lock className="w-3 h-3" /></div>}
                       <p className="text-brand-100 text-sm mb-1">Daily Progress</p>
                       <div className="flex items-end gap-2">
                         <span className="text-3xl font-bold">{dailyProgress}%</span>
@@ -887,12 +887,12 @@ const Dashboard: React.FC<{
                         <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${dailyProgress}%` }}></div>
                       </div>
                     </div>
-                    
-                    <div 
+
+                    <div
                       className={`bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 transition-colors group relative ${isToday ? 'hover:bg-white/20 cursor-pointer' : 'cursor-not-allowed opacity-80'}`}
                       onClick={() => isToday && setShowLogModal(true)}
                     >
-                      {!isToday && <div className="absolute top-2 right-2 opacity-50"><Lock className="w-3 h-3"/></div>}
+                      {!isToday && <div className="absolute top-2 right-2 opacity-50"><Lock className="w-3 h-3" /></div>}
                       <p className="text-brand-100 text-sm mb-1 flex items-center gap-1">
                         Current Weight <span className={`bg-white/20 p-0.5 rounded text-[10px] transition-colors px-1 ${isToday ? 'group-hover:bg-brand-500' : ''}`}>LOG</span>
                       </p>
@@ -905,10 +905,10 @@ const Dashboard: React.FC<{
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {/* Quick Workout / Diet Links */}
-                 <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
+                {/* Quick Workout / Diet Links */}
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
                   <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
-                     <Activity className="w-5 h-5 text-brand-500" /> Daily Snapshot
+                    <Activity className="w-5 h-5 text-brand-500" /> Daily Snapshot
                   </h3>
                   {plan.days?.[planDayIndex] && (
                     <div className="space-y-4">
@@ -925,7 +925,7 @@ const Dashboard: React.FC<{
                         <ChevronRight className="text-slate-300 group-hover:text-brand-500" />
                       </div>
 
-                       <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors" onClick={() => setActiveTab('diet')}>
+                      <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors" onClick={() => setActiveTab('diet')}>
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:bg-orange-200 transition-colors">
                             <Utensils className="w-6 h-6" />
@@ -935,7 +935,7 @@ const Dashboard: React.FC<{
                             <p className="font-bold text-slate-900 dark:text-white text-lg">{plan.days[planDayIndex].diet?.totalCalories || 0} kcal</p>
                           </div>
                         </div>
-                         <ChevronRight className="text-slate-300 group-hover:text-brand-500" />
+                        <ChevronRight className="text-slate-300 group-hover:text-brand-500" />
                       </div>
                     </div>
                   )}
@@ -943,36 +943,36 @@ const Dashboard: React.FC<{
 
                 {/* Hydration Widget */}
                 <div className={`bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between relative overflow-hidden`}>
-                   <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-                      <Droplets size={120} />
-                   </div>
-                   <div>
-                      <h3 className="text-lg font-bold dark:text-white flex items-center gap-2 mb-1">
-                        <Droplets className="w-5 h-5 text-blue-500" /> Hydration
-                      </h3>
-                      <p className="text-slate-500 text-sm">Daily Goal: {DAILY_WATER_GOAL}ml</p>
-                   </div>
-                   
-                   <div className="py-6 flex flex-col items-center">
-                      <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
-                        {waterIntake} <span className="text-lg text-slate-400 font-medium">ml</span>
-                      </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min(100, (waterIntake / DAILY_WATER_GOAL) * 100)}%` }}
-                        />
-                      </div>
-                   </div>
+                  <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
+                    <Droplets size={120} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold dark:text-white flex items-center gap-2 mb-1">
+                      <Droplets className="w-5 h-5 text-blue-500" /> Hydration
+                    </h3>
+                    <p className="text-slate-500 text-sm">Daily Goal: {DAILY_WATER_GOAL}ml</p>
+                  </div>
 
-                    <div className="flex gap-3 justify-center relative z-10">
-                        <button onClick={() => updateWater(-250)} disabled={!isToday} className={`w-10 h-10 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center transition-colors ${!isToday ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                          <span className="text-xl font-bold text-slate-500 dark:text-slate-400">-</span>
-                        </button>
-                        <button onClick={() => updateWater(250)} disabled={!isToday} className={`px-6 py-2 rounded-full bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/30 flex items-center gap-2 ${!isToday ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}>
-                          {isToday ? <Plus className="w-4 h-4" /> : <Lock className="w-4 h-4"/>} 250ml
-                        </button>
+                  <div className="py-6 flex flex-col items-center">
+                    <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+                      {waterIntake} <span className="text-lg text-slate-400 font-medium">ml</span>
                     </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+                      <div
+                        className="bg-blue-500 h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(100, (waterIntake / DAILY_WATER_GOAL) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 justify-center relative z-10">
+                    <button onClick={() => updateWater(-250)} disabled={!isToday} className={`w-10 h-10 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center transition-colors ${!isToday ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+                      <span className="text-xl font-bold text-slate-500 dark:text-slate-400">-</span>
+                    </button>
+                    <button onClick={() => updateWater(250)} disabled={!isToday} className={`px-6 py-2 rounded-full bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/30 flex items-center gap-2 ${!isToday ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}>
+                      {isToday ? <Plus className="w-4 h-4" /> : <Lock className="w-4 h-4" />} 250ml
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -980,105 +980,103 @@ const Dashboard: React.FC<{
 
           {/* ANALYTICS TAB */}
           {activeTab === 'analytics' && (
-             <AnalyticsView logs={logs} profile={user.profile!} plan={plan} />
+            <AnalyticsView logs={logs} profile={user.profile!} plan={plan} />
           )}
 
           {/* WORKOUT TAB */}
           {activeTab === 'workout' && (
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in relative pb-20">
-              
+
               {/* Sticky Workout Timer Header */}
-               <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-6 transition-all duration-300">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                      
-                      {/* Mode Selector */}
-                      <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex w-full md:w-auto">
-                         <button 
-                            onClick={() => { setIsTimerActive(false); setTimerMode('stopwatch'); setTimerSeconds(0); }}
-                            className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${timerMode === 'stopwatch' ? 'bg-white dark:bg-slate-600 text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                         >
-                            STOPWATCH
-                         </button>
-                         <button 
-                            onClick={() => { setIsTimerActive(false); setTimerMode('timer'); setTimerSeconds(60); setInitialTimerTime(60); }}
-                            className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${timerMode === 'timer' ? 'bg-white dark:bg-slate-600 text-orange-500 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                         >
-                            TIMER
-                         </button>
-                      </div>
+              <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-6 transition-all duration-300">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
 
-                      {/* Time Display & Controls */}
-                      <div className="flex items-center gap-6">
-                          {/* Adjusters (Timer only, Paused only) */}
-                          {timerMode === 'timer' && !isTimerActive && (
-                             <button onClick={() => adjustTimer(-10)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">-10</button>
-                          )}
-
-                          <div className={`text-5xl font-mono font-bold tracking-wider tabular-nums ${
-                             isTimerActive 
-                               ? (timerMode === 'timer' ? 'text-orange-500' : 'text-brand-600')
-                               : 'text-slate-400'
-                          }`}>
-                             {formatTime(timerSeconds)}
-                          </div>
-
-                          {timerMode === 'timer' && !isTimerActive && (
-                             <button onClick={() => adjustTimer(10)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">+10</button>
-                          )}
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex items-center gap-3 w-full md:w-auto justify-center">
-                           <button 
-                             onClick={() => {
-                               if (timerSeconds === 0 && timerMode === 'timer') {
-                                 handleTimerStart('timer', 60); 
-                               } else {
-                                 setIsTimerActive(!isTimerActive);
-                               }
-                             }}
-                             className={`h-12 px-6 rounded-xl flex items-center gap-2 font-bold transition-all ${
-                               isTimerActive 
-                               ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200' 
-                               : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/30'
-                             }`}
-                           >
-                              {isTimerActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5" />}
-                              {isTimerActive ? 'PAUSE' : 'START'}
-                           </button>
-                           
-                           <button 
-                             onClick={() => { setIsTimerActive(false); setTimerSeconds(timerMode === 'timer' ? initialTimerTime : 0); }}
-                             className="h-12 w-12 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400 transition-all"
-                             title="Reset"
-                           >
-                              <RotateCcw className="w-5 h-5" />
-                           </button>
-                      </div>
+                  {/* Mode Selector */}
+                  <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex w-full md:w-auto">
+                    <button
+                      onClick={() => { setIsTimerActive(false); setTimerMode('stopwatch'); setTimerSeconds(0); }}
+                      className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${timerMode === 'stopwatch' ? 'bg-white dark:bg-slate-600 text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                    >
+                      STOPWATCH
+                    </button>
+                    <button
+                      onClick={() => { setIsTimerActive(false); setTimerMode('timer'); setTimerSeconds(60); setInitialTimerTime(60); }}
+                      className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${timerMode === 'timer' ? 'bg-white dark:bg-slate-600 text-orange-500 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                    >
+                      TIMER
+                    </button>
                   </div>
-                  
-                  {/* Presets Row (Timer Mode Only) */}
-                  {timerMode === 'timer' && (
-                     <div className="flex justify-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wide self-center mr-2">Quick Set:</span>
-                         {[30, 45, 60, 90, 120, 300].map(s => (
-                            <button 
-                               key={s}
-                               onClick={() => handleTimerStart('timer', s)} 
-                               className="px-3 py-1 bg-slate-50 dark:bg-slate-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors border border-slate-200 dark:border-slate-600"
-                            >
-                               {s < 60 ? `${s}s` : `${s/60}m`}
-                            </button>
-                         ))}
-                     </div>
-                  )}
-               </div>
+
+                  {/* Time Display & Controls */}
+                  <div className="flex items-center gap-6">
+                    {/* Adjusters (Timer only, Paused only) */}
+                    {timerMode === 'timer' && !isTimerActive && (
+                      <button onClick={() => adjustTimer(-10)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">-10</button>
+                    )}
+
+                    <div className={`text-5xl font-mono font-bold tracking-wider tabular-nums ${isTimerActive
+                        ? (timerMode === 'timer' ? 'text-orange-500' : 'text-brand-600')
+                        : 'text-slate-400'
+                      }`}>
+                      {formatTime(timerSeconds)}
+                    </div>
+
+                    {timerMode === 'timer' && !isTimerActive && (
+                      <button onClick={() => adjustTimer(10)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">+10</button>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-3 w-full md:w-auto justify-center">
+                    <button
+                      onClick={() => {
+                        if (timerSeconds === 0 && timerMode === 'timer') {
+                          handleTimerStart('timer', 60);
+                        } else {
+                          setIsTimerActive(!isTimerActive);
+                        }
+                      }}
+                      className={`h-12 px-6 rounded-xl flex items-center gap-2 font-bold transition-all ${isTimerActive
+                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
+                          : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/30'
+                        }`}
+                    >
+                      {isTimerActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5" />}
+                      {isTimerActive ? 'PAUSE' : 'START'}
+                    </button>
+
+                    <button
+                      onClick={() => { setIsTimerActive(false); setTimerSeconds(timerMode === 'timer' ? initialTimerTime : 0); }}
+                      className="h-12 w-12 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400 transition-all"
+                      title="Reset"
+                    >
+                      <RotateCcw className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Presets Row (Timer Mode Only) */}
+                {timerMode === 'timer' && (
+                  <div className="flex justify-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide self-center mr-2">Quick Set:</span>
+                    {[30, 45, 60, 90, 120, 300].map(s => (
+                      <button
+                        key={s}
+                        onClick={() => handleTimerStart('timer', s)}
+                        className="px-3 py-1 bg-slate-50 dark:bg-slate-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors border border-slate-200 dark:border-slate-600"
+                      >
+                        {s < 60 ? `${s}s` : `${s / 60}m`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
                 <div className="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
                   <div>
                     <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
-                       {plan.days?.[planDayIndex]?.focus || 'Rest'}
+                      {plan.days?.[planDayIndex]?.focus || 'Rest'}
                     </h2>
                     <p className="text-slate-500 text-sm mt-1">Tap exercises to mark as complete</p>
                   </div>
@@ -1092,11 +1090,11 @@ const Dashboard: React.FC<{
                     const isCompleted = selectedDateLog?.details?.[`exercise-${idx}`] || false;
 
                     return (
-                      <div 
-                        key={idx} 
+                      <div
+                        key={idx}
                         className={`relative overflow-hidden flex flex-col p-5 rounded-2xl gap-4 transition-all duration-300 border-2
-                          ${isCompleted 
-                            ? 'bg-brand-50/50 dark:bg-brand-900/10 border-brand-200 dark:border-brand-900 opacity-75' 
+                          ${isCompleted
+                            ? 'bg-brand-50/50 dark:bg-brand-900/10 border-brand-200 dark:border-brand-900 opacity-75'
                             : 'bg-white dark:bg-slate-700/30 border-slate-100 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500 shadow-sm hover:shadow-md'
                           } ${!isToday ? 'opacity-80' : ''}`}
                       >
@@ -1124,20 +1122,20 @@ const Dashboard: React.FC<{
                               )}
                             </div>
                           </div>
-                          
+
                           <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 mt-2 sm:mt-0">
                             {exercise.variations && exercise.variations.length > 0 && (
                               <button
-                                  onClick={() => setExpandedExercise(expandedExercise === idx ? null : idx)}
-                                  className="flex items-center justify-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-                                  title="See Variations"
+                                onClick={() => setExpandedExercise(expandedExercise === idx ? null : idx)}
+                                className="flex items-center justify-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
+                                title="See Variations"
                               >
-                                  <Shuffle className="w-4 h-4" />
+                                <Shuffle className="w-4 h-4" />
                               </button>
                             )}
-                            <a 
-                              href={getSearchLink(exercise.name, 'video')} 
-                              target="_blank" 
+                            <a
+                              href={getSearchLink(exercise.name, 'video')}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                             >
@@ -1155,23 +1153,22 @@ const Dashboard: React.FC<{
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               {exercise.variations.map((variation, vIdx) => (
                                 <div key={vIdx} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-lg flex justify-between items-center">
-                                    <div>
-                                      <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${
-                                        variation.difficulty === 'Easier' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                  <div>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${variation.difficulty === 'Easier' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                                       }`}>
-                                        {variation.difficulty}
-                                      </span>
-                                      <p className="font-medium text-slate-800 dark:text-slate-200 mt-1">{variation.name}</p>
-                                    </div>
-                                    <a 
-                                      href={getSearchLink(variation.name, 'video')} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                      title="Watch Video"
-                                    >
-                                      <PlayCircle className="w-5 h-5" />
-                                    </a>
+                                      {variation.difficulty}
+                                    </span>
+                                    <p className="font-medium text-slate-800 dark:text-slate-200 mt-1">{variation.name}</p>
+                                  </div>
+                                  <a
+                                    href={getSearchLink(variation.name, 'video')}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
+                                    title="Watch Video"
+                                  >
+                                    <PlayCircle className="w-5 h-5" />
+                                  </a>
                                 </div>
                               ))}
                             </div>
@@ -1205,7 +1202,7 @@ const Dashboard: React.FC<{
                     const isCompleted = selectedDateLog?.details?.[`meal-${idx}`] || false;
 
                     return (
-                      <div 
+                      <div
                         key={idx}
                         className={`relative flex flex-col p-5 rounded-2xl border-2 transition-all
                           ${isCompleted
@@ -1214,7 +1211,7 @@ const Dashboard: React.FC<{
                           } ${!isToday ? 'opacity-80' : ''}`}
                       >
                         {/* Meal Header */}
-                        <div 
+                        <div
                           className={`flex flex-col md:flex-row md:items-center justify-between ${isToday ? 'cursor-pointer' : 'cursor-not-allowed'}`}
                           onClick={() => toggleItemCompletion('meal', idx)}
                         >
@@ -1238,11 +1235,11 @@ const Dashboard: React.FC<{
                           </div>
 
                           <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <button 
+                            <button
                               onClick={() => setExpandedMeal(expandedMeal === idx ? null : idx)}
                               className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium text-sm bg-brand-50 dark:bg-brand-900/20 px-4 py-2 rounded-xl hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors"
                             >
-                              <ChefHat className="w-4 h-4" /> 
+                              <ChefHat className="w-4 h-4" />
                               {expandedMeal === idx ? 'Hide Recipe' : 'View Recipe'}
                               {expandedMeal === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                             </button>
@@ -1253,33 +1250,33 @@ const Dashboard: React.FC<{
                         {expandedMeal === idx && (
                           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-600 animate-fade-in pl-10">
                             <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                  <h5 className="font-bold text-sm text-slate-900 dark:text-white mb-2 uppercase tracking-wide">Ingredients</h5>
-                                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-300 space-y-1">
-                                    {meal.ingredients?.map((ing, i) => (
-                                      <li key={i}>{ing}</li>
-                                    )) || <li>Ingredients not available.</li>}
-                                  </ul>
-                                </div>
-                                <div>
-                                  <h5 className="font-bold text-sm text-slate-900 dark:text-white mb-2 uppercase tracking-wide">Instructions</h5>
-                                  <ol className="list-decimal list-inside text-sm text-slate-600 dark:text-slate-300 space-y-2">
-                                    {meal.instructions?.map((inst, i) => (
-                                      <li key={i}>{inst}</li>
-                                    )) || <li>Instructions not available.</li>}
-                                  </ol>
+                              <div>
+                                <h5 className="font-bold text-sm text-slate-900 dark:text-white mb-2 uppercase tracking-wide">Ingredients</h5>
+                                <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-300 space-y-1">
+                                  {meal.ingredients?.map((ing, i) => (
+                                    <li key={i}>{ing}</li>
+                                  )) || <li>Ingredients not available.</li>}
+                                </ul>
+                              </div>
+                              <div>
+                                <h5 className="font-bold text-sm text-slate-900 dark:text-white mb-2 uppercase tracking-wide">Instructions</h5>
+                                <ol className="list-decimal list-inside text-sm text-slate-600 dark:text-slate-300 space-y-2">
+                                  {meal.instructions?.map((inst, i) => (
+                                    <li key={i}>{inst}</li>
+                                  )) || <li>Instructions not available.</li>}
+                                </ol>
 
-                                  <div className="mt-6">
-                                    <a 
-                                      href={getSearchLink(meal.name, 'video')} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                                    >
-                                      <Video className="w-4 h-4" /> Watch Cooking Video
-                                    </a>
-                                  </div>
+                                <div className="mt-6">
+                                  <a
+                                    href={getSearchLink(meal.name, 'video')}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    <Video className="w-4 h-4" /> Watch Cooking Video
+                                  </a>
                                 </div>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1300,21 +1297,20 @@ const Dashboard: React.FC<{
                   <div className="bg-brand-100 dark:bg-brand-900/50 p-2 rounded-lg text-brand-600">
                     <MessageSquare className="w-5 h-5" />
                   </div>
-                   AI Fitness Coach
+                  AI Fitness Coach
                 </h2>
                 <span className="text-xs text-slate-400 flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
                 </span>
               </div>
-              
+
               <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
                 {chatHistory.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-4 md:p-5 rounded-3xl text-sm leading-relaxed shadow-sm ${
-                      msg.role === 'user' 
-                      ? 'bg-brand-600 text-white rounded-br-none' 
-                      : 'bg-white border border-slate-100 dark:bg-slate-700 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-bl-none'
-                    }`}>
+                    <div className={`max-w-[85%] p-4 md:p-5 rounded-3xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
+                        ? 'bg-brand-600 text-white rounded-br-none'
+                        : 'bg-white border border-slate-100 dark:bg-slate-700 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                      }`}>
                       <div className="markdown" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
                     </div>
                   </div>
@@ -1332,10 +1328,10 @@ const Dashboard: React.FC<{
 
               <form onSubmit={handleChatSubmit} className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
                 <div className="flex gap-3 items-center">
-                  <input 
-                    value={chatInput} 
-                    onChange={e => setChatInput(e.target.value)} 
-                    placeholder="Ask about exercises, food, or tips..." 
+                  <input
+                    value={chatInput}
+                    onChange={e => setChatInput(e.target.value)}
+                    placeholder="Ask about exercises, food, or tips..."
                     className="flex-1 px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all dark:text-white"
                   />
                   <Button type="submit" disabled={isChatting || !chatInput.trim()} className="px-6 py-3 rounded-xl">
@@ -1349,7 +1345,7 @@ const Dashboard: React.FC<{
 
           {/* SETTINGS TAB */}
           {activeTab === 'settings' && (
-            <SettingsView user={user} onUpdateProfile={onUpdateUser} onLogout={onLogout} />
+            <SettingsView user={user} onUpdateProfile={onUpdateUser} onUpdatePlan={onUpdatePlan} onLogout={onLogout} />
           )}
 
         </main>
