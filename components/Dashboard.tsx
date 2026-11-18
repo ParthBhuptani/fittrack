@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import { User, UserProfile, WeeklyPlan, ProgressLog, Goal } from '../types';
 import { StorageService } from '../services/storageService';
 import { GeminiService } from '../services/geminiService';
 import { Button } from './Button';
 import { Input } from './Input';
 import SettingsView from './SettingsView';
-import AnalyticsView from './AnalyticsView';
+
 import {
   Activity,
   Utensils,
@@ -51,6 +51,8 @@ import {
   getWeightLabel,
   toDisplayHeight
 } from '../utils';
+// Loaded only when the Progress tab opens, so the charts library stays out of the first download.
+const AnalyticsView = lazy(() => import('./AnalyticsView'));
 
 const Dashboard: React.FC<{
   user: User;
@@ -980,7 +982,9 @@ const Dashboard: React.FC<{
 
           {/* ANALYTICS TAB */}
           {activeTab === 'analytics' && (
-            <AnalyticsView logs={logs} profile={user.profile!} plan={plan} />
+            <Suspense fallback={<div className="py-20 text-center text-slate-400 text-sm">Loading your progress...</div>}>
+              <AnalyticsView logs={logs} profile={user.profile!} plan={plan} />
+            </Suspense>
           )}
 
           {/* WORKOUT TAB */}
@@ -1015,8 +1019,8 @@ const Dashboard: React.FC<{
                     )}
 
                     <div className={`text-5xl font-mono font-bold tracking-wider tabular-nums ${isTimerActive
-                        ? (timerMode === 'timer' ? 'text-orange-500' : 'text-brand-600')
-                        : 'text-slate-400'
+                      ? (timerMode === 'timer' ? 'text-orange-500' : 'text-brand-600')
+                      : 'text-slate-400'
                       }`}>
                       {formatTime(timerSeconds)}
                     </div>
@@ -1037,8 +1041,8 @@ const Dashboard: React.FC<{
                         }
                       }}
                       className={`h-12 px-6 rounded-xl flex items-center gap-2 font-bold transition-all ${isTimerActive
-                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
-                          : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/30'
+                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
+                        : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/30'
                         }`}
                     >
                       {isTimerActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5" />}
@@ -1308,8 +1312,8 @@ const Dashboard: React.FC<{
                 {chatHistory.map((msg, idx) => (
                   <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[85%] p-4 md:p-5 rounded-3xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                        ? 'bg-brand-600 text-white rounded-br-none'
-                        : 'bg-white border border-slate-100 dark:bg-slate-700 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-bl-none'
+                      ? 'bg-brand-600 text-white rounded-br-none'
+                      : 'bg-white border border-slate-100 dark:bg-slate-700 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-bl-none'
                       }`}>
                       <div className="markdown" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
                     </div>
