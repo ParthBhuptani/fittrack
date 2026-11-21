@@ -2,6 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens for the new interface. The old screens do not use these yet. */
+:root {
+  --canvas: #F4F5F2;
+  --surface: #FFFFFF;
+  --ink: #17231E;
+  --muted: #52615A;
+  --line: #DDE3DE;
+  --soft: #E9EDE8;
+  --action: #0B7F58;
+  --on-action: #FFFFFF;
+  --accent: #0B7F58;
+  --accent-fill: #0E9F6E;
+  --sun: #F2B544;
+  --warn: #B45309;
+  --water: #2563EB;
+  --danger: #B42318;
+}
+.dark {
+  --canvas: #0F1A15;
+  --surface: #16231D;
+  --ink: #EAF1ED;
+  --muted: #9FB0A7;
+  --line: #263830;
+  --soft: #1D2D26;
+  --action: #34D399;
+  --on-action: #0F1A15;
+  --accent: #34D399;
+  --accent-fill: #34D399;
+  --warn: #F2B544;
+  --water: #7AA7FF;
+  --danger: #F97066;
+}
+
 /* Custom Thin Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
