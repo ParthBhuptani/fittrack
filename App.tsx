@@ -23,6 +23,7 @@ const SuspenseFallback: React.FC = () => (
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [user, setUser] = useState<User | null>(null);
   const [plan, setPlan] = useState<WeeklyPlan | null>(null);
   const [logs, setLogs] = useState<ProgressLog[]>([]);
@@ -95,24 +96,23 @@ export default function App() {
     }
   };
 
-  const handleUserAuthComplete = async (userData: User) => {
-    // If it's a new user (just registered), we might need to generate the plan
-    // If it's a login, we just load.
+  // Called by the auth screens once the user is signed in. Returns an error message
+  // when the plan could not be built, so the form can show it instead of getting stuck.
+  const handleUserAuthComplete = async (userData: User): Promise<string | void> => {
     setPendingUser(null);
-    
+
     const existingPlan = await StorageService.getPlan(userData.id);
-    
+
     if (existingPlan) {
       await loadUserData(userData);
     } else if (userData.profile) {
-      // Generate new plan
       try {
         const generatedPlan = await GeminiService.generateWeeklyPlan(userData.profile);
         await StorageService.savePlan(userData.id, generatedPlan);
         await loadUserData(userData);
       } catch (error) {
         console.error("Failed to generate plan", error);
-        alert(error instanceof Error ? error.message : "Something went wrong generating your plan. Please try again.");
+        return error instanceof Error ? error.message : "Something went wrong generating your plan. Please try again.";
       }
     }
   };
@@ -150,11 +150,11 @@ export default function App() {
         <SuspenseFallback />
       ) : (
         <>
-          {view === 'landing' && <LandingPage onAuth={() => setView('auth')} theme={theme} onToggleTheme={toggleTheme} />}
+          {view === 'landing' && <LandingPage onAuth={(mode) => { setAuthMode(mode); setView('auth'); }} theme={theme} onToggleTheme={toggleTheme} />}
 
           {view === 'auth' && (
             <Suspense fallback={<SuspenseFallback />}>
-              <AuthFlow onComplete={handleUserAuthComplete} existingUser={pendingUser || undefined} />
+              <AuthFlow onComplete={handleUserAuthComplete} existingUser={pendingUser || undefined} initialMode={authMode} onBack={() => setView('landing')} theme={theme} onToggleTheme={toggleTheme} />
             </Suspense>
           )}
 
