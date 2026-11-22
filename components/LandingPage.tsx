@@ -12,6 +12,7 @@ interface Props {
 }
 
 const REPO = 'https://github.com/ParthBhuptani/fittrack';
+const Portfolio = 'https://parthbhuptani.me';
 
 type Msg = { who: 'me' | 'coach'; text: string };
 
@@ -401,7 +402,7 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
             </p>
             <div className="foot-bottom">
               <span>© 2026 FitTrack. Released under the MIT license.</span>
-              <span>Built by Parth Bhuptani · <a href={REPO}>Source on GitHub</a></span>
+              <span><a href={Portfolio}>Built by Parth Bhuptani</a> · <a href={REPO}>Source on GitHub</a></span>
             </div>
           </footer>
         </section>

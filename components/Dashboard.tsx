@@ -5,6 +5,8 @@ import { GeminiService } from '../services/geminiService';
 import { Button } from './Button';
 import { Input } from './Input';
 import SettingsView from './SettingsView';
+import AppShell, { TabId } from './app/AppShell';
+import { Sheet } from './ui/Sheet';
 
 import {
   Activity,
@@ -37,7 +39,7 @@ import {
   BarChart2,
   Calendar as CalendarIcon,
   ChevronLeft,
-  Printer,
+  FileText,
   Flame,
   Timer
 } from 'lucide-react';
@@ -65,7 +67,7 @@ const Dashboard: React.FC<{
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }> = ({ user, plan, onLogout, logs, onLogProgress, onUpdatePlan, onUpdateUser, theme, toggleTheme }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'workout' | 'diet' | 'chat' | 'settings' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isChatting, setIsChatting] = useState(false);
@@ -73,15 +75,12 @@ const Dashboard: React.FC<{
   const [expandedMeal, setExpandedMeal] = useState<number | null>(null);
   const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
 
-  // Header Dropdown State
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showReportMenu, setShowReportMenu] = useState(false);
+  // Report sheet
+  const [showReport, setShowReport] = useState(false);
 
   // Calendar Popover State
   const [showCalendar, setShowCalendar] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-  const reportMenuRef = useRef<HTMLDivElement>(null);
 
   // Log Modal State
   const [showLogModal, setShowLogModal] = useState(false);
@@ -115,12 +114,6 @@ const Dashboard: React.FC<{
     function handleClickOutside(event: MouseEvent) {
       if (calendarRef.current && !calendarRef.current.contains(event.target as Node)) {
         setShowCalendar(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
-      }
-      if (reportMenuRef.current && !reportMenuRef.current.contains(event.target as Node)) {
-        setShowReportMenu(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -302,7 +295,7 @@ const Dashboard: React.FC<{
   };
 
   const generatePDFReport = (range: 'daily' | 'weekly' | 'monthly') => {
-    setShowReportMenu(false);
+    setShowReport(false);
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert("Please allow popups to view the report.");
@@ -603,14 +596,6 @@ const Dashboard: React.FC<{
     return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   })();
 
-  const handleProfileClick = () => {
-    if (window.innerWidth < 768) {
-      setActiveTab('settings');
-    } else {
-      setShowUserMenu(!showUserMenu);
-    }
-  };
-
   const CalendarPopover = () => {
     const [viewDate, setViewDate] = useState(new Date(selectedDate));
 
@@ -678,8 +663,14 @@ const Dashboard: React.FC<{
     );
   };
 
+  const reportOptions: { range: 'daily' | 'weekly' | 'monthly'; title: string; hint: string }[] = [
+    { range: 'daily', title: 'Today', hint: 'Just today\'s numbers' },
+    { range: 'weekly', title: 'Last 7 days', hint: 'With weight and workout charts' },
+    { range: 'monthly', title: 'Last 30 days', hint: 'With weight and workout charts' },
+  ];
+
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900 overflow-hidden font-sans transition-colors duration-300">
+    <>
 
       {/* Log Progress Modal */}
       {showLogModal && (
@@ -721,109 +712,19 @@ const Dashboard: React.FC<{
         </div>
       )}
 
-      {/* Top Navigation */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex justify-between items-center z-10 shadow-sm relative">
-        <div className="flex items-center gap-2">
-          <div className="bg-brand-600 p-1.5 rounded-lg">
-            <Activity className="text-white w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold dark:text-white hidden md:block tracking-tight">FitTrack</h1>
-        </div>
-        <div className="flex items-center gap-3">
-
-          {/* Streak Counter */}
-          <div className="flex items-center gap-1.5 mr-2 px-3 py-1.5 bg-orange-50 dark:bg-orange-900/20 rounded-full border border-orange-100 dark:border-orange-800/30">
-            <Flame className={`w-4 h-4 text-orange-500 ${streakCount > 0 ? 'animate-pulse' : ''} fill-current`} />
-            <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{streakCount}</span>
-          </div>
-
-          <div className="relative" ref={reportMenuRef}>
-            <Button variant="outline" onClick={() => setShowReportMenu(!showReportMenu)} className="hidden sm:flex text-sm py-2 h-9">
-              <Printer className="w-4 h-4 mr-2" /> Report
-            </Button>
-            {showReportMenu && (
-              <div className="absolute top-10 right-0 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 animate-fade-in">
-                <button onClick={() => generatePDFReport('daily')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Daily Report</button>
-                <button onClick={() => generatePDFReport('weekly')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Weekly Report</button>
-                <button onClick={() => generatePDFReport('monthly')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">Monthly Report</button>
-              </div>
-            )}
-          </div>
-
-          <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-2 hidden sm:block"></div>
-
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-            title="Toggle Dark Mode"
-          >
-            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-          </button>
-
-          {/* User Profile Menu */}
-          <div className="relative" ref={userMenuRef}>
-            <button
-              onClick={handleProfileClick}
-              className="flex items-center gap-2 mr-2 hover:opacity-80 transition-opacity"
-            >
-              <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-slate-700 flex items-center justify-center text-brand-700 dark:text-brand-400 font-bold text-sm border-2 border-transparent hover:border-brand-200 dark:hover:border-slate-500 transition-all">
-                {user.profile?.name.charAt(0)}
-              </div>
-              <div className="hidden md:block text-left">
-                <span className="block text-sm font-medium dark:text-slate-300 leading-none">{user.profile?.name}</span>
-                <span className="text-[10px] text-slate-400">View Profile</span>
-              </div>
-            </button>
-
-            {/* Dropdown Menu (Desktop) */}
-            {showUserMenu && (
-              <div className="absolute right-0 top-12 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 animate-fade-in z-50 hidden md:block">
-                <button
-                  onClick={() => { setActiveTab('settings'); setShowUserMenu(false); }}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
-                >
-                  <Settings className="w-4 h-4" /> Settings
-                </button>
-                <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-                <button
-                  onClick={onLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" /> Log Out
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar (Desktop) / Bottom Nav (Mobile) */}
-        <nav className="w-full md:w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-row md:flex-col fixed md:relative bottom-0 z-20 md:z-0 h-16 md:h-full justify-around md:justify-start md:pt-6 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] md:shadow-none">
-          {[
-            { id: 'overview', icon: TrendingUp, label: 'Overview' },
-            { id: 'analytics', icon: BarChart2, label: 'Progress' },
-            { id: 'workout', icon: Dumbbell, label: 'Workouts' },
-            { id: 'diet', icon: Utensils, label: 'Diet Plan' },
-            { id: 'chat', icon: MessageSquare, label: 'AI Coach' },
-            { id: 'settings', icon: Settings, label: 'Settings' },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
-              className={`flex flex-col md:flex-row items-center md:px-6 py-2 md:py-3 w-full transition-all duration-200 group
-                ${activeTab === item.id
-                  ? 'text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/10 border-t-2 md:border-t-0 md:border-r-4 border-brand-600 dark:border-brand-400'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-t-2 md:border-t-0 md:border-r-4 border-transparent'}`}
-            >
-              <item.icon className={`w-6 h-6 md:mr-3 transition-transform group-hover:scale-110 ${activeTab === item.id ? 'fill-current opacity-20' : ''}`} />
-              <span className="text-[10px] md:text-sm font-semibold mt-1 md:mt-0">{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900 p-4 md:p-8 pb-24 md:pb-8 relative">
+      <AppShell
+        name={user.profile?.name || ''}
+        email={user.email}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        activeTab={activeTab}
+        onTab={setActiveTab}
+        streak={streakCount}
+        timerText={isTimerActive ? formatTime(timerSeconds) : null}
+        onReport={() => setShowReport(true)}
+        onLogout={onLogout}
+      >
+        <div className="p-4 md:p-8 relative min-h-full">
 
           {/* Day Selector (Common for Workout/Diet/Overview) */}
           {(activeTab === 'workout' || activeTab === 'diet' || activeTab === 'overview') && (
@@ -1352,9 +1253,25 @@ const Dashboard: React.FC<{
             <SettingsView user={user} onUpdateProfile={onUpdateUser} onUpdatePlan={onUpdatePlan} onLogout={onLogout} />
           )}
 
-        </main>
-      </div>
-    </div>
+        </div>
+      </AppShell>
+
+      <Sheet open={showReport} onClose={() => setShowReport(false)} title="Download report" description="Opens a printable report you can save as a PDF.">
+        <div className="flex flex-col gap-2">
+          {reportOptions.map(o => (
+            <button
+              key={o.range}
+              type="button"
+              onClick={() => generatePDFReport(o.range)}
+              className="flex min-h-[56px] items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-2 text-left transition-colors hover:bg-soft"
+            >
+              <span><b className="block font-bold text-ink">{o.title}</b><span className="text-sm text-muted">{o.hint}</span></span>
+              <FileText className="h-5 w-5 shrink-0 text-muted" aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      </Sheet>
+    </>
   );
 }
 
