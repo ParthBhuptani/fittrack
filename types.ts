@@ -5,7 +5,7 @@ export enum DietType { Vegan = 'Vegan', Vegetarian = 'Vegetarian', NonVeg = 'Non
 export interface UserProfile { name: string; age: number; gender: Gender; height: number; weight: number; units: 'metric' | 'imperial'; goal: Goal; activityLevel: ActivityLevel; dietType: DietType; restrictions: string[]; dietaryPreferences: string; injuries: string; allergies: string; equipment: string; }
 export interface User { id: string; email: string; password?: string; profile?: UserProfile; createdAt: number; displayName?: string; }
 export interface ExerciseVariation { name: string; difficulty: 'Easier' | 'Harder'; }
-export interface Exercise { name: string; sets: string; reps: string; tips: string; completed?: boolean; variations?: ExerciseVariation[]; }
+export interface Exercise { name: string; sets: string; reps: string; tips: string; completed?: boolean; variations?: ExerciseVariation[]; swappedFrom?: string; }
 export interface Meal { type: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack'; name: string; calories: number; recipeStub: string; ingredients: string[]; instructions: string[]; completed?: boolean; }
 export interface DailyPlan { dayName: string; focus: string; workout: { exercises: Exercise[]; durationMinutes: number; }; diet: { totalCalories: number; meals: Meal[]; }; }
 export interface WeeklyPlan { generatedAt: number; weeklySummary: string; days: DailyPlan[]; }
