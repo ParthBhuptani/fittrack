@@ -19,6 +19,7 @@ export const Dropdown: React.FC<DropdownProps> = ({ label, value, options, onCha
   const uid = useId();
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  const [up, setUp] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const selectedIndex = Math.max(0, options.findIndex(o => o.value === value));
   const current = options[selectedIndex];
@@ -32,7 +33,17 @@ export const Dropdown: React.FC<DropdownProps> = ({ label, value, options, onCha
     return () => document.removeEventListener('mousedown', onDown);
   }, [open]);
 
-  const openMenu = () => { setActive(selectedIndex); setOpen(true); };
+  const openMenu = () => {
+    // Open upward when the list would run off the bottom of the screen.
+    const r = root.current?.getBoundingClientRect();
+    if (r) {
+      const need = options.length * 44 + 24;
+      const below = window.innerHeight - r.bottom;
+      setUp(below < need && r.top > below);
+    }
+    setActive(selectedIndex);
+    setOpen(true);
+  };
   const choose = (i: number) => { onChange(options[i].value); setOpen(false); };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -52,6 +63,7 @@ export const Dropdown: React.FC<DropdownProps> = ({ label, value, options, onCha
   return (
     <div ref={root} className={`relative ${className}`}>
       <span id={`${uid}-label`} className="mb-1.5 block text-[15px] font-semibold text-ink">{label}</span>
+      <div className="relative">
       <button
         type="button"
         role="combobox"
@@ -74,7 +86,7 @@ export const Dropdown: React.FC<DropdownProps> = ({ label, value, options, onCha
           id={`${uid}-list`}
           role="listbox"
           aria-labelledby={`${uid}-label`}
-          className="absolute inset-x-0 top-[calc(100%+6px)] z-40 m-0 origin-top list-none rounded-2xl border border-line bg-surface p-1.5 shadow-2xl animate-dd-in motion-reduce:animate-none"
+          className={`absolute inset-x-0 z-40 m-0 list-none ${up ? 'bottom-[calc(100%+6px)] origin-bottom' : 'top-[calc(100%+6px)] origin-top'} rounded-2xl border border-line bg-surface p-1.5 shadow-2xl animate-dd-in motion-reduce:animate-none`}
         >
           {options.map((o, i) => (
             <li
@@ -95,6 +107,7 @@ export const Dropdown: React.FC<DropdownProps> = ({ label, value, options, onCha
           ))}
         </ul>
       )}
+      </div>
     </div>
   );
 };

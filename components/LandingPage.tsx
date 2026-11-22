@@ -6,7 +6,7 @@ import {
 } from './landing/landingData';
 
 interface Props {
-  onAuth: () => void;
+  onAuth: (mode: 'login' | 'signup') => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
 }
@@ -119,7 +119,7 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
     reply(hit ? hit.a : FALLBACK, 900);
   };
 
-  const go = (e: React.MouseEvent) => { e.preventDefault(); onAuth(); };
+  const go = (mode: 'login' | 'signup') => (e: React.MouseEvent) => { e.preventDefault(); onAuth(mode); };
   const isLight = theme === 'light';
   const themeLabel = isLight ? 'Switch to dark theme' : 'Switch to light theme';
 
@@ -155,8 +155,8 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
               )}
             </button>
-            <a className="login" href="#" onClick={go}>Log in</a>
-            <a className="btn" href="#" onClick={go}>Start free</a>
+            <a className="login" href="#" onClick={go('login')}>Log in</a>
+            <a className="btn" href="#" onClick={go('signup')}>Start free</a>
           </div>
         </div>
       </header>
@@ -167,7 +167,7 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
             <h1 className="disp h1">A week of training and meals, built around you.</h1>
             <p className="lede">Tell FitTrack your goal, injuries and equipment. It plans seven days of workouts and meals, then coaches you through them.</p>
             <div className="cta-row">
-              <a className="btn btn-lg" href="#" onClick={go}>Create my plan</a>
+              <a className="btn btn-lg" href="#" onClick={go('signup')}>Create my plan</a>
               <p className="fine">Free and open source. <a href={REPO}>See the code</a></p>
             </div>
           </div>
@@ -248,7 +248,7 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
 
               <div className="planner-foot">
                 <span>Sample plan. Meals add up to {totalKcal.toLocaleString('en-US')} kcal a day.</span>
-                <a href="#" onClick={go}>Build mine</a>
+                <a href="#" onClick={go('signup')}>Build mine</a>
               </div>
             </div>
           </div>
@@ -336,7 +336,7 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
                       <input id="room-q" type="text" maxLength={200} autoComplete="off" placeholder="Ask your own question" value={draft} onChange={(e) => setDraft(e.target.value)} />
                       <button className="btn" type="submit">Send</button>
                     </form>
-                    <p className="room-note"><strong>Sample coach, general information only, not medical advice.</strong> It answers common questions. <a href="#" onClick={go}>Create a free account</a> and the coach uses your own profile and plan.</p>
+                    <p className="room-note"><strong>Sample coach, general information only, not medical advice.</strong> It answers common questions. <a href="#" onClick={go('signup')}>Create a free account</a> and the coach uses your own profile and plan.</p>
                   </div>
                 </div>
               </div>
@@ -366,7 +366,7 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
               <h2 className="disp h2">Your first week is about a minute away.</h2>
               <p>Sign up with email or Google.</p>
             </div>
-            <a className="btn btn-lg" href="#" onClick={go}>Create my plan</a>
+            <a className="btn btn-lg" href="#" onClick={go('signup')}>Create my plan</a>
           </div>
           <footer className="foot" style={{ paddingInline: 0 }}>
             <div className="foot-grid">
@@ -385,8 +385,8 @@ const LandingPage: React.FC<Props> = ({ onAuth, theme, onToggleTheme }) => {
               </nav>
               <nav className="foot-col" aria-label="Account">
                 <h3>Account</h3>
-                <a href="#" onClick={go}>Log in</a>
-                <a href="#" onClick={go}>Sign up free</a>
+                <a href="#" onClick={go('login')}>Log in</a>
+                <a href="#" onClick={go('signup')}>Sign up free</a>
               </nav>
               <nav className="foot-col" aria-label="Project">
                 <h3>Project</h3>
