@@ -9,6 +9,7 @@ import AppShell, { TabId } from './app/AppShell';
 import { Sheet } from './ui/Sheet';
 import { useToast } from './ui/Toast';
 import TodayView from './app/TodayView';
+import MealsView from './app/MealsView';
 import WorkoutsView, { TimerMode } from './app/WorkoutsView';
 
 import {
@@ -76,7 +77,6 @@ const Dashboard: React.FC<{
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [expandedMeal, setExpandedMeal] = useState<number | null>(null);
 
   // Report sheet
   const [showReport, setShowReport] = useState(false);
@@ -728,42 +728,7 @@ const Dashboard: React.FC<{
         onReport={() => setShowReport(true)}
         onLogout={onLogout}
       >
-        <div className={(activeTab === 'overview' || activeTab === 'workout') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
-
-          {/* Day Selector (Common for Workout/Diet/Overview) */}
-          {activeTab === 'diet' && (
-            <div className="max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4 bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
-                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                <div className="flex flex-col items-center cursor-pointer px-2" onClick={() => setShowCalendar(!showCalendar)}>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{getDayName(selectedDate)}</p>
-                    <CalendarIcon className="w-3 h-3 text-brand-500" />
-                  </div>
-                  <p className="font-bold text-slate-900 dark:text-white">{formatDate(selectedDate)}</p>
-                </div>
-
-                <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() + 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-
-                {/* Calendar Dropdown */}
-                {showCalendar && <CalendarPopover />}
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => { setSelectedDate(new Date()); }}
-                  className="text-sm text-brand-600 font-medium hover:underline"
-                >
-                  Jump to Today
-                </button>
-              </div>
-            </div>
-          )}
+        <div className={(activeTab === 'overview' || activeTab === 'workout' || activeTab === 'diet') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
 
           {/* TODAY TAB */}
           {activeTab === 'overview' && (
@@ -813,110 +778,17 @@ const Dashboard: React.FC<{
             />
           )}
 
-          {/* DIET TAB */}
+          {/* MEALS TAB */}
           {activeTab === 'diet' && (
-            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-20">
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-                <div className="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold dark:text-white">Daily Meal Plan</h2>
-                    <p className="text-slate-500 text-sm mt-1">Tap meal to track • Expand for recipe</p>
-                  </div>
-                  <span className="text-brand-600 dark:text-brand-400 font-bold bg-brand-50 dark:bg-brand-900/20 px-4 py-2 rounded-full">
-                    {plan.days?.[planDayIndex]?.diet?.totalCalories || 0} kcal
-                  </span>
-                </div>
-
-                <div className="grid gap-4">
-                  {plan.days?.[planDayIndex]?.diet?.meals?.map((meal, idx) => {
-                    const isCompleted = selectedDateLog?.details?.[`meal-${idx}`] || false;
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`relative flex flex-col p-5 rounded-2xl border-2 transition-all
-                          ${isCompleted
-                            ? 'bg-brand-50/50 dark:bg-brand-900/10 border-brand-200 dark:border-brand-900'
-                            : 'bg-white dark:bg-slate-700/30 border-slate-100 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500 shadow-sm'
-                          } ${!isToday ? 'opacity-80' : ''}`}
-                      >
-                        {/* Meal Header */}
-                        <div
-                          className={`flex flex-col md:flex-row md:items-center justify-between ${isToday ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                          onClick={() => toggleItemCompletion('meal', idx)}
-                        >
-                          <div className="flex items-start gap-4 flex-1">
-                            <div className={`mt-1 flex-shrink-0 transition-colors ${isCompleted ? 'text-brand-500' : 'text-slate-300'}`}>
-                              {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{meal.type}</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span className="text-xs font-medium text-slate-500">{meal.calories} kcal</span>
-                              </div>
-                              <h4 className={`text-xl font-bold text-slate-800 dark:text-slate-100 mb-1 ${isCompleted ? 'line-through text-slate-500' : ''}`}>
-                                {meal.name}
-                              </h4>
-                              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed mb-2">
-                                {meal.recipeStub}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => setExpandedMeal(expandedMeal === idx ? null : idx)}
-                              className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-700 dark:text-brand-400 font-medium text-sm bg-brand-50 dark:bg-brand-900/20 px-4 py-2 rounded-xl hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors"
-                            >
-                              <ChefHat className="w-4 h-4" />
-                              {expandedMeal === idx ? 'Hide Recipe' : 'View Recipe'}
-                              {expandedMeal === idx ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Recipe Dropdown */}
-                        {expandedMeal === idx && (
-                          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-600 animate-fade-in pl-10">
-                            <div className="grid md:grid-cols-2 gap-6">
-                              <div>
-                                <h5 className="font-bold text-sm text-slate-900 dark:text-white mb-2 uppercase tracking-wide">Ingredients</h5>
-                                <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-300 space-y-1">
-                                  {meal.ingredients?.map((ing, i) => (
-                                    <li key={i}>{ing}</li>
-                                  )) || <li>Ingredients not available.</li>}
-                                </ul>
-                              </div>
-                              <div>
-                                <h5 className="font-bold text-sm text-slate-900 dark:text-white mb-2 uppercase tracking-wide">Instructions</h5>
-                                <ol className="list-decimal list-inside text-sm text-slate-600 dark:text-slate-300 space-y-2">
-                                  {meal.instructions?.map((inst, i) => (
-                                    <li key={i}>{inst}</li>
-                                  )) || <li>Instructions not available.</li>}
-                                </ol>
-
-                                <div className="mt-6">
-                                  <a
-                                    href={getSearchLink(meal.name, 'video')}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                                  >
-                                    <Video className="w-4 h-4" /> Watch Cooking Video
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <MealsView
+              plan={plan}
+              logs={logs}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              isToday={isToday}
+              onToggleMeal={(idx) => toggleItemCompletion('meal', idx)}
+              searchLink={(q) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q + ' recipe')}`}
+            />
           )}
 
           {/* CHAT TAB */}
