@@ -48,3 +48,28 @@
   .as .brand span{font-size:20px}
 }
 @media (max-width:900px) and (prefers-reduced-motion:reduce){.as .pill-ind{transition:none}}
+/* smaller top bar on phones */
+@media (max-width:640px){
+  .as{grid-template-rows:52px minmax(0,1fr) 62px}
+  .as .top{padding-inline:12px}
+  .as .brand{gap:6px}
+  .as .brand svg{width:28px;height:28px}
+  .as .brand span{font-size:18px}
+  .as .top-r{gap:6px}
+  .as .chip{min-height:32px;padding:0 10px;font-size:14px;gap:4px}
+  .as .chip svg{width:16px;height:16px}
+  .as .avatar{width:36px;height:36px;font-size:16px}
+  .as .menu{top:44px}
+}
+
+/* smaller top bar on phones */
+@media (max-width:640px){
+  .as .top{padding-inline:12px;gap:8px}
+  .as .brand{font-size:18px;gap:6px}
+  .as .brand svg{width:28px;height:28px}
+  .as .top-r{gap:6px}
+  .as .chip{min-height:32px;padding:0 10px;font-size:14px;gap:4px}
+  .as .chip svg{width:16px;height:16px}
+  .as .avatar{width:36px;height:36px;font-size:16px}
+  .as .menu{top:44px}
+}

@@ -7,6 +7,9 @@ import { Input } from './Input';
 import SettingsView from './SettingsView';
 import AppShell, { TabId } from './app/AppShell';
 import { Sheet } from './ui/Sheet';
+import { useToast } from './ui/Toast';
+import TodayView from './app/TodayView';
+import WorkoutsView, { TimerMode } from './app/WorkoutsView';
 
 import {
   Activity,
@@ -67,13 +70,13 @@ const Dashboard: React.FC<{
   theme: 'light' | 'dark';
   toggleTheme: () => void;
 }> = ({ user, plan, onLogout, logs, onLogProgress, onUpdatePlan, onUpdateUser, theme, toggleTheme }) => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [expandedMeal, setExpandedMeal] = useState<number | null>(null);
-  const [expandedExercise, setExpandedExercise] = useState<number | null>(null);
 
   // Report sheet
   const [showReport, setShowReport] = useState(false);
@@ -83,7 +86,6 @@ const Dashboard: React.FC<{
   const calendarRef = useRef<HTMLDivElement>(null);
 
   // Log Modal State
-  const [showLogModal, setShowLogModal] = useState(false);
   const [logWeight, setLogWeight] = useState(toDisplayWeight(user.profile?.weight || 0, user.profile?.units || 'metric'));
   const [logWorkout, setLogWorkout] = useState(false);
 
@@ -94,7 +96,7 @@ const Dashboard: React.FC<{
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [timerMode, setTimerMode] = useState<'stopwatch' | 'timer'>('stopwatch');
-  const [initialTimerTime, setInitialTimerTime] = useState(0);
+  const [initialTimerTime, setInitialTimerTime] = useState(60);
 
   // Load chat history on mount
   useEffect(() => {
@@ -196,22 +198,62 @@ const Dashboard: React.FC<{
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const adjustTimer = (amount: number) => {
-    if (!isTimerActive) {
-      setTimerSeconds(prev => Math.max(0, prev + amount));
-      setInitialTimerTime(prev => Math.max(0, prev + amount));
-    }
+  const handleTimerMode = (mode: TimerMode) => {
+    setIsTimerActive(false);
+    setTimerMode(mode);
+    setTimerSeconds(mode === 'timer' ? initialTimerTime : 0);
   };
 
-  const handleTimerStart = (mode: 'stopwatch' | 'timer', seconds?: number) => {
-    setTimerMode(mode);
-    if (seconds !== undefined) {
-      setTimerSeconds(seconds);
-      setInitialTimerTime(seconds);
-    } else if (mode === 'stopwatch') {
-      // Keep existing seconds if switching back to stopwatch
-    }
+  const handleTimerPreset = (seconds: number) => {
+    setIsTimerActive(false);
+    setTimerMode('timer');
+    setTimerSeconds(seconds);
+    setInitialTimerTime(seconds);
+  };
+
+  const handleTimerToggle = () => {
+    if (isTimerActive) { setIsTimerActive(false); return; }
+    if (timerMode === 'timer' && timerSeconds === 0) setTimerSeconds(initialTimerTime);
     setIsTimerActive(true);
+  };
+
+  const handleTimerReset = () => {
+    setIsTimerActive(false);
+    setTimerSeconds(timerMode === 'timer' ? initialTimerTime : 0);
+  };
+
+  // Tell the user when a countdown finishes.
+  const wasTimerActive = useRef(false);
+  useEffect(() => {
+    if (wasTimerActive.current && !isTimerActive && timerMode === 'timer' && timerSeconds === 0) {
+      toast.show("Time's up", 'info');
+    }
+    wasTimerActive.current = isTimerActive;
+  }, [isTimerActive, timerMode, timerSeconds]);
+
+  // Replace an exercise with one of its easier or harder versions and save the plan.
+  const handleSwap = (exerciseIdx: number, variationIdx: number) => {
+    const dayIdx = getPlanDayIndex(selectedDate);
+    const day = plan.days?.[dayIdx];
+    const ex = day?.workout?.exercises?.[exerciseIdx];
+    const variation = ex?.variations?.[variationIdx];
+    if (!day || !ex || !variation) return;
+    const swapped = {
+      ...ex,
+      name: variation.name,
+      swappedFrom: ex.swappedFrom || ex.name,
+      // The exercise we leave becomes a version you can switch back to.
+      variations: [
+        ...(ex.variations || []).filter((_, k) => k !== variationIdx),
+        { name: ex.name, difficulty: variation.difficulty === 'Easier' ? 'Harder' as const : 'Easier' as const },
+      ],
+    };
+    const days = plan.days.map((d, i) => i !== dayIdx ? d : {
+      ...d,
+      workout: { ...d.workout, exercises: d.workout.exercises.map((e, k) => k === exerciseIdx ? swapped : e) },
+    });
+    onUpdatePlan({ ...plan, days });
+    toast.show(variation.difficulty === 'Easier' ? 'Swapped to easier' : 'Swapped to harder', 'success');
   };
 
   // Initialize Log Data based on today or existing logs
@@ -234,7 +276,7 @@ const Dashboard: React.FC<{
 
   const handleSaveLog = (partialLog: Partial<ProgressLog> = {}) => {
     if (!isToday) {
-      alert("You can only log stats for today.");
+      toast.show("You can only log stats for today.", "info");
       return;
     }
 
@@ -251,12 +293,11 @@ const Dashboard: React.FC<{
       details: existing.details,
       ...partialLog
     });
-    setShowLogModal(false);
   };
 
   const updateWater = (amount: number) => {
     if (!isToday) {
-      alert("You can only log water for today.");
+      toast.show("You can only log water for today.", "info");
       return;
     }
     const newAmount = Math.max(0, waterIntake + amount);
@@ -298,7 +339,7 @@ const Dashboard: React.FC<{
     setShowReport(false);
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      alert("Please allow popups to view the report.");
+      toast.show("Please allow pop-ups to view the report.", "error");
       return;
     }
 
@@ -569,7 +610,7 @@ const Dashboard: React.FC<{
 
   const toggleItemCompletion = (type: 'exercise' | 'meal', index: number) => {
     if (!isToday) {
-      alert("You cannot modify past or future records.");
+      toast.show("You can only change today's records.", "info");
       return;
     }
 
@@ -579,8 +620,11 @@ const Dashboard: React.FC<{
     const details = existingLog?.details || {};
     const newStatus = !details[itemId];
 
-    // We save current state values, ensuring weight is consistent
-    handleSaveLog({ details: { ...details, [itemId]: newStatus } });
+    const newDetails = { ...details, [itemId]: newStatus };
+    const exercises = plan.days?.[planDayIndex]?.workout?.exercises || [];
+    const workoutCompleted = exercises.length > 0 && exercises.every((_, i) => newDetails[`exercise-${i}`]);
+
+    handleSaveLog({ details: newDetails, workoutCompleted });
   };
 
   const dailyProgress = (() => {
@@ -672,46 +716,6 @@ const Dashboard: React.FC<{
   return (
     <>
 
-      {/* Log Progress Modal */}
-      {showLogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 dark:border-slate-700">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold dark:text-white flex items-center gap-2">
-                <Scale className="w-5 h-5 text-brand-500" /> Log Today's Stats
-              </h3>
-              <button
-                onClick={() => setShowLogModal(false)}
-                className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-              >
-                <X className="w-4 h-4 text-slate-500 dark:text-slate-300" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <Input
-                label={`Current Weight (${getWeightLabel(user.profile?.units || 'metric')})`}
-                type="number"
-                value={logWeight}
-                onChange={(e) => setLogWeight(Number(e.target.value))}
-                icon={<Scale size={18} />}
-              />
-
-              <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl cursor-pointer" onClick={() => setLogWorkout(!logWorkout)}>
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${logWorkout ? 'bg-brand-500 border-brand-500' : 'border-slate-300 dark:border-slate-500'}`}>
-                  {logWorkout && <CheckCircle2 className="w-4 h-4 text-white" />}
-                </div>
-                <span className="font-medium text-slate-700 dark:text-slate-300">Workout Completed?</span>
-              </div>
-
-              <Button onClick={() => handleSaveLog()} className="w-full mt-4">
-                Save Progress
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <AppShell
         name={user.profile?.name || ''}
         email={user.email}
@@ -724,10 +728,10 @@ const Dashboard: React.FC<{
         onReport={() => setShowReport(true)}
         onLogout={onLogout}
       >
-        <div className="p-4 md:p-8 relative min-h-full">
+        <div className={(activeTab === 'overview' || activeTab === 'workout') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
 
           {/* Day Selector (Common for Workout/Diet/Overview) */}
-          {(activeTab === 'workout' || activeTab === 'diet' || activeTab === 'overview') && (
+          {activeTab === 'diet' && (
             <div className="max-w-5xl mx-auto mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4 bg-white dark:bg-slate-800 px-4 py-2 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 relative">
                 <button onClick={() => setSelectedDate(new Date(selectedDate.setDate(selectedDate.getDate() - 1)))} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full">
@@ -761,124 +765,23 @@ const Dashboard: React.FC<{
             </div>
           )}
 
-          {/* OVERVIEW TAB */}
+          {/* TODAY TAB */}
           {activeTab === 'overview' && (
-            <div className="space-y-6 max-w-5xl mx-auto animate-fade-in">
-              {/* Hero Card */}
-              <div className="bg-gradient-to-r from-brand-600 to-teal-600 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10 transform translate-x-10 -translate-y-10">
-                  <Activity size={140} />
-                </div>
-                <div className="relative z-10">
-                  <h2 className="text-3xl font-bold mb-2">
-                    {isToday ? "Let's crush today," : "Plan for"} {user.profile?.name.split(' ')[0]}!
-                  </h2>
-                  <p className="text-brand-100 text-lg mb-6 max-w-xl">
-                    Focus for {getDayName(selectedDate)}: <span className="font-bold text-white">{plan.days?.[planDayIndex]?.focus || 'Rest'}</span>.
-                    {isToday ? "Stay consistent!" : "Prepare ahead."}
-                  </p>
-
-                  <div className="flex flex-wrap items-end gap-6">
-                    <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 relative">
-                      {!isToday && <div className="absolute top-2 right-2 opacity-50"><Lock className="w-3 h-3" /></div>}
-                      <p className="text-brand-100 text-sm mb-1">Daily Progress</p>
-                      <div className="flex items-end gap-2">
-                        <span className="text-3xl font-bold">{dailyProgress}%</span>
-                        <span className="text-sm mb-1 opacity-80">completed</span>
-                      </div>
-                      <div className="w-32 h-1.5 bg-black/20 rounded-full mt-2 overflow-hidden">
-                        <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${dailyProgress}%` }}></div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/20 transition-colors group relative ${isToday ? 'hover:bg-white/20 cursor-pointer' : 'cursor-not-allowed opacity-80'}`}
-                      onClick={() => isToday && setShowLogModal(true)}
-                    >
-                      {!isToday && <div className="absolute top-2 right-2 opacity-50"><Lock className="w-3 h-3" /></div>}
-                      <p className="text-brand-100 text-sm mb-1 flex items-center gap-1">
-                        Current Weight <span className={`bg-white/20 p-0.5 rounded text-[10px] transition-colors px-1 ${isToday ? 'group-hover:bg-brand-500' : ''}`}>LOG</span>
-                      </p>
-                      <p className="text-3xl font-bold flex items-center gap-2">
-                        {logWeight} {getWeightLabel(user.profile?.units || 'metric')}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Quick Workout / Diet Links */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
-                  <h3 className="text-lg font-bold mb-4 dark:text-white flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-brand-500" /> Daily Snapshot
-                  </h3>
-                  {plan.days?.[planDayIndex] && (
-                    <div className="space-y-4">
-                      <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors" onClick={() => setActiveTab('workout')}>
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 bg-blue-100 text-blue-600 rounded-xl group-hover:bg-blue-200 transition-colors">
-                            <Dumbbell className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Workout Focus</p>
-                            <p className="font-bold text-slate-900 dark:text-white text-lg">{plan.days[planDayIndex].focus || 'Rest'}</p>
-                          </div>
-                        </div>
-                        <ChevronRight className="text-slate-300 group-hover:text-brand-500" />
-                      </div>
-
-                      <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-2xl flex items-center justify-between group cursor-pointer hover:bg-brand-50 dark:hover:bg-slate-700 transition-colors" onClick={() => setActiveTab('diet')}>
-                        <div className="flex items-center gap-4">
-                          <div className="p-3 bg-orange-100 text-orange-600 rounded-xl group-hover:bg-orange-200 transition-colors">
-                            <Utensils className="w-6 h-6" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Nutrition Goal</p>
-                            <p className="font-bold text-slate-900 dark:text-white text-lg">{plan.days[planDayIndex].diet?.totalCalories || 0} kcal</p>
-                          </div>
-                        </div>
-                        <ChevronRight className="text-slate-300 group-hover:text-brand-500" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Hydration Widget */}
-                <div className={`bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col justify-between relative overflow-hidden`}>
-                  <div className="absolute right-0 bottom-0 opacity-5 pointer-events-none">
-                    <Droplets size={120} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold dark:text-white flex items-center gap-2 mb-1">
-                      <Droplets className="w-5 h-5 text-blue-500" /> Hydration
-                    </h3>
-                    <p className="text-slate-500 text-sm">Daily Goal: {DAILY_WATER_GOAL}ml</p>
-                  </div>
-
-                  <div className="py-6 flex flex-col items-center">
-                    <div className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
-                      {waterIntake} <span className="text-lg text-slate-400 font-medium">ml</span>
-                    </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
-                      <div
-                        className="bg-blue-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${Math.min(100, (waterIntake / DAILY_WATER_GOAL) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 justify-center relative z-10">
-                    <button onClick={() => updateWater(-250)} disabled={!isToday} className={`w-10 h-10 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center transition-colors ${!isToday ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-                      <span className="text-xl font-bold text-slate-500 dark:text-slate-400">-</span>
-                    </button>
-                    <button onClick={() => updateWater(250)} disabled={!isToday} className={`px-6 py-2 rounded-full bg-blue-500 text-white font-medium transition-colors shadow-lg shadow-blue-500/30 flex items-center gap-2 ${!isToday ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-600'}`}>
-                      {isToday ? <Plus className="w-4 h-4" /> : <Lock className="w-4 h-4" />} 250ml
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TodayView
+              firstName={(user.profile?.name || '').split(' ')[0]}
+              plan={plan}
+              logs={logs}
+              units={user.profile?.units || 'metric'}
+              profileWeightKg={user.profile?.weight || 0}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              isToday={isToday}
+              waterIntake={waterIntake}
+              onWater={updateWater}
+              onSaveWeight={(kg) => handleSaveLog({ weight: kg })}
+              onOpenWorkouts={() => setActiveTab('workout')}
+              onOpenMeals={() => setActiveTab('diet')}
+            />
           )}
 
           {/* ANALYTICS TAB */}
@@ -888,204 +791,26 @@ const Dashboard: React.FC<{
             </Suspense>
           )}
 
-          {/* WORKOUT TAB */}
+          {/* WORKOUTS TAB */}
           {activeTab === 'workout' && (
-            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in relative pb-20">
-
-              {/* Sticky Workout Timer Header */}
-              <div className="sticky top-0 z-30 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-6 transition-all duration-300">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-
-                  {/* Mode Selector */}
-                  <div className="bg-slate-100 dark:bg-slate-700 p-1 rounded-xl flex w-full md:w-auto">
-                    <button
-                      onClick={() => { setIsTimerActive(false); setTimerMode('stopwatch'); setTimerSeconds(0); }}
-                      className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${timerMode === 'stopwatch' ? 'bg-white dark:bg-slate-600 text-brand-600 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                    >
-                      STOPWATCH
-                    </button>
-                    <button
-                      onClick={() => { setIsTimerActive(false); setTimerMode('timer'); setTimerSeconds(60); setInitialTimerTime(60); }}
-                      className={`flex-1 md:flex-none px-6 py-2 rounded-lg text-sm font-bold transition-all ${timerMode === 'timer' ? 'bg-white dark:bg-slate-600 text-orange-500 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
-                    >
-                      TIMER
-                    </button>
-                  </div>
-
-                  {/* Time Display & Controls */}
-                  <div className="flex items-center gap-6">
-                    {/* Adjusters (Timer only, Paused only) */}
-                    {timerMode === 'timer' && !isTimerActive && (
-                      <button onClick={() => adjustTimer(-10)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">-10</button>
-                    )}
-
-                    <div className={`text-5xl font-mono font-bold tracking-wider tabular-nums ${isTimerActive
-                      ? (timerMode === 'timer' ? 'text-orange-500' : 'text-brand-600')
-                      : 'text-slate-400'
-                      }`}>
-                      {formatTime(timerSeconds)}
-                    </div>
-
-                    {timerMode === 'timer' && !isTimerActive && (
-                      <button onClick={() => adjustTimer(10)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold">+10</button>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-3 w-full md:w-auto justify-center">
-                    <button
-                      onClick={() => {
-                        if (timerSeconds === 0 && timerMode === 'timer') {
-                          handleTimerStart('timer', 60);
-                        } else {
-                          setIsTimerActive(!isTimerActive);
-                        }
-                      }}
-                      className={`h-12 px-6 rounded-xl flex items-center gap-2 font-bold transition-all ${isTimerActive
-                        ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-200'
-                        : 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg shadow-brand-500/30'
-                        }`}
-                    >
-                      {isTimerActive ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5" />}
-                      {isTimerActive ? 'PAUSE' : 'START'}
-                    </button>
-
-                    <button
-                      onClick={() => { setIsTimerActive(false); setTimerSeconds(timerMode === 'timer' ? initialTimerTime : 0); }}
-                      className="h-12 w-12 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-400 transition-all"
-                      title="Reset"
-                    >
-                      <RotateCcw className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Presets Row (Timer Mode Only) */}
-                {timerMode === 'timer' && (
-                  <div className="flex justify-center gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wide self-center mr-2">Quick Set:</span>
-                    {[30, 45, 60, 90, 120, 300].map(s => (
-                      <button
-                        key={s}
-                        onClick={() => handleTimerStart('timer', s)}
-                        className="px-3 py-1 bg-slate-50 dark:bg-slate-700/50 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold transition-colors border border-slate-200 dark:border-slate-600"
-                      >
-                        {s < 60 ? `${s}s` : `${s / 60}m`}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-                <div className="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold dark:text-white flex items-center gap-2">
-                      {plan.days?.[planDayIndex]?.focus || 'Rest'}
-                    </h2>
-                    <p className="text-slate-500 text-sm mt-1">Tap exercises to mark as complete</p>
-                  </div>
-                  <span className="text-slate-500 dark:text-slate-400 flex items-center gap-2 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full text-sm font-medium">
-                    <Activity className="w-4 h-4" /> {plan.days?.[planDayIndex]?.workout?.durationMinutes || 0} min
-                  </span>
-                </div>
-
-                <div className="space-y-4">
-                  {plan.days?.[planDayIndex]?.workout?.exercises?.map((exercise, idx) => {
-                    const isCompleted = selectedDateLog?.details?.[`exercise-${idx}`] || false;
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`relative overflow-hidden flex flex-col p-5 rounded-2xl gap-4 transition-all duration-300 border-2
-                          ${isCompleted
-                            ? 'bg-brand-50/50 dark:bg-brand-900/10 border-brand-200 dark:border-brand-900 opacity-75'
-                            : 'bg-white dark:bg-slate-700/30 border-slate-100 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500 shadow-sm hover:shadow-md'
-                          } ${!isToday ? 'opacity-80' : ''}`}
-                      >
-                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isToday ? 'cursor-pointer' : 'cursor-not-allowed'}`} onClick={() => toggleItemCompletion('exercise', idx)}>
-                          <div className="flex items-start gap-4">
-                            <div className={`mt-1 flex-shrink-0 transition-colors ${isCompleted ? 'text-brand-500' : 'text-slate-300'}`}>
-                              {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                            </div>
-                            <div className="flex-1">
-                              <h4 className={`font-bold text-lg dark:text-white transition-all ${isCompleted ? 'line-through text-slate-500' : ''}`}>
-                                {exercise.name}
-                              </h4>
-                              <div className="flex flex-wrap gap-2 text-sm text-slate-600 dark:text-slate-300 mt-2">
-                                <span className="bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded-md font-medium">
-                                  {exercise.sets} Sets
-                                </span>
-                                <span className="bg-slate-100 dark:bg-slate-600 px-2 py-1 rounded-md font-medium">
-                                  {exercise.reps} Reps
-                                </span>
-                              </div>
-                              {!isCompleted && (
-                                <p className="text-sm text-slate-500 italic mt-2 border-l-2 border-brand-200 pl-3">
-                                  "{exercise.tips}"
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-2 mt-2 sm:mt-0">
-                            {exercise.variations && exercise.variations.length > 0 && (
-                              <button
-                                onClick={() => setExpandedExercise(expandedExercise === idx ? null : idx)}
-                                className="flex items-center justify-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-600 dark:text-slate-200 px-3 py-2 rounded-xl text-sm font-medium transition-colors"
-                                title="See Variations"
-                              >
-                                <Shuffle className="w-4 h-4" />
-                              </button>
-                            )}
-                            <a
-                              href={getSearchLink(exercise.name, 'video')}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 px-4 py-2 rounded-xl text-sm font-medium transition-colors"
-                            >
-                              <PlayCircle className="w-4 h-4" /> <span className="hidden sm:inline">Watch Demo</span>
-                            </a>
-                          </div>
-                        </div>
-
-                        {/* Variations Panel */}
-                        {expandedExercise === idx && exercise.variations && (
-                          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-600 animate-fade-in pl-10">
-                            <h5 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-2">
-                              <AlertCircle className="w-4 h-4" /> Alternative Exercises
-                            </h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              {exercise.variations.map((variation, vIdx) => (
-                                <div key={vIdx} className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 p-3 rounded-lg flex justify-between items-center">
-                                  <div>
-                                    <span className={`text-xs font-bold px-2 py-0.5 rounded uppercase ${variation.difficulty === 'Easier' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                                      }`}>
-                                      {variation.difficulty}
-                                    </span>
-                                    <p className="font-medium text-slate-800 dark:text-slate-200 mt-1">{variation.name}</p>
-                                  </div>
-                                  <a
-                                    href={getSearchLink(variation.name, 'video')}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                                    title="Watch Video"
-                                  >
-                                    <PlayCircle className="w-5 h-5" />
-                                  </a>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <WorkoutsView
+              plan={plan}
+              logs={logs}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              isToday={isToday}
+              onToggleExercise={(idx) => toggleItemCompletion('exercise', idx)}
+              onSwap={handleSwap}
+              searchLink={(q) => getSearchLink(q, 'video')}
+              timerMode={timerMode}
+              timerSeconds={timerSeconds}
+              timerTarget={initialTimerTime}
+              timerActive={isTimerActive}
+              onTimerMode={handleTimerMode}
+              onTimerPreset={handleTimerPreset}
+              onTimerToggle={handleTimerToggle}
+              onTimerReset={handleTimerReset}
+            />
           )}
 
           {/* DIET TAB */}

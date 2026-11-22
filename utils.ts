@@ -11,8 +11,13 @@ export const getDayName = (date: Date) => {
   return date.toLocaleDateString('en-US', { weekday: 'long' });
 };
 
+// The calendar date in the user's own time zone (YYYY-MM-DD).
+// toISOString() uses UTC, which gives the wrong day for part of every day outside UTC.
 export const formatDate = (date: Date) => {
-  return date.toISOString().split('T')[0];
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
 export const getPlanDayIndex = (date: Date) => {
