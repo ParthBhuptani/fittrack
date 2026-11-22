@@ -150,7 +150,7 @@ export default function App() {
         <SuspenseFallback />
       ) : (
         <>
-          {view === 'landing' && <LandingPage onAuth={() => setView('auth')} />}
+          {view === 'landing' && <LandingPage onAuth={() => setView('auth')} theme={theme} onToggleTheme={toggleTheme} />}
 
           {view === 'auth' && (
             <Suspense fallback={<SuspenseFallback />}>
