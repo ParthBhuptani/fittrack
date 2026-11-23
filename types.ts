@@ -2,7 +2,7 @@ export enum Gender { Male = 'Male', Female = 'Female', Other = 'Other' }
 export enum Goal { WeightLoss = 'Weight Loss', MuscleGain = 'Muscle Gain', Maintenance = 'Maintenance', Endurance = 'Endurance', Flexibility = 'Flexibility' }
 export enum ActivityLevel { Sedentary = 'Sedentary', LightlyActive = 'Lightly Active', ModeratelyActive = 'Moderately Active', VeryActive = 'Very Active' }
 export enum DietType { Vegan = 'Vegan', Vegetarian = 'Vegetarian', NonVeg = 'Non-Vegetarian', Eggetarian = 'Eggetarian', Keto = 'Keto', Paleo = 'Paleo', Balanced = 'Balanced', Other = 'Other' }
-export interface UserProfile { name: string; age: number; gender: Gender; height: number; weight: number; units: 'metric' | 'imperial'; goal: Goal; activityLevel: ActivityLevel; dietType: DietType; restrictions: string[]; dietaryPreferences: string; injuries: string; allergies: string; equipment: string; }
+export interface UserProfile { waterGoal?: number; name: string; age: number; gender: Gender; height: number; weight: number; units: 'metric' | 'imperial'; goal: Goal; activityLevel: ActivityLevel; dietType: DietType; restrictions: string[]; dietaryPreferences: string; injuries: string; allergies: string; equipment: string; }
 export interface User { id: string; email: string; password?: string; profile?: UserProfile; createdAt: number; displayName?: string; }
 export interface ExerciseVariation { name: string; difficulty: 'Easier' | 'Harder'; }
 export interface Exercise { name: string; sets: string; reps: string; tips: string; completed?: boolean; variations?: ExerciseVariation[]; swappedFrom?: string; }
