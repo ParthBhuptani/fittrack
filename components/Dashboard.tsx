@@ -2,9 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, UserProfile, WeeklyPlan, ProgressLog, Goal } from '../types';
 import { StorageService } from '../services/storageService';
 import { GeminiService } from '../services/geminiService';
-import { Button } from './Button';
-import { Input } from './Input';
-import SettingsView from './SettingsView';
+import SettingsView from './app/SettingsView';
 import AppShell, { TabId } from './app/AppShell';
 import { Sheet } from './ui/Sheet';
 import { useToast } from './ui/Toast';
@@ -738,7 +736,7 @@ const Dashboard: React.FC<{
         onReport={() => setShowReport(true)}
         onLogout={onLogout}
       >
-        <div className={(activeTab === 'overview' || activeTab === 'workout' || activeTab === 'diet' || activeTab === 'chat' || activeTab === 'analytics') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
+        <div className="relative min-h-full">
 
           {/* TODAY TAB */}
           {activeTab === 'overview' && (

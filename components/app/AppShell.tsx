@@ -81,8 +81,8 @@ const AppShell: React.FC<Props> = ({ name, email, theme, onToggleTheme, activeTa
                 <div className="name"><b>{name}</b><span>{email}</span></div>
                 <button role="menuitem" type="button" onClick={() => choose('settings')}><Settings size={18} aria-hidden="true" />Settings</button>
                 <button role="menuitem" type="button" onClick={() => { setMenu(false); onReport(); }}><FileText size={18} aria-hidden="true" />Download report</button>
-                <button className="only-m" role="menuitem" type="button" onClick={() => { setMenu(false); onToggleTheme(); }}><ThemeIcon size={18} aria-hidden="true" />{themeLabel}</button>
-                <button role="menuitem" type="button" onClick={() => { setMenu(false); onLogout(); }}><LogOut size={18} aria-hidden="true" />Log out</button>
+                <button className="only-m" role="menuitem" type="button" onClick={() => { setMenu(false); onToggleTheme(); }}><ThemeIcon size={18} aria-hidden="true" />Switch theme</button>
+                <button className="danger" role="menuitem" type="button" onClick={() => { setMenu(false); onLogout(); }}><LogOut size={18} aria-hidden="true" />Log out</button>
               </div>
             )}
           </div>
@@ -96,6 +96,9 @@ const AppShell: React.FC<Props> = ({ name, email, theme, onToggleTheme, activeTa
             <n.icon size={20} aria-hidden="true" /><span>{n.label}</span>
           </button>
         ))}
+        <button type="button" className={`ni set only-d ${activeTab === 'settings' ? 'on' : ''}`} aria-current={activeTab === 'settings' ? 'page' : undefined} onClick={() => choose('settings')}>
+          <Settings size={20} aria-hidden="true" /><span>Settings</span>
+        </button>
         <p className="side-note only-d"><b>Not medical advice.</b> FitTrack gives general information. Check with your doctor before you start a new plan.</p>
       </nav>
 
