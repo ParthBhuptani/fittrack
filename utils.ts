@@ -4,7 +4,15 @@ export const DIETARY_RESTRICTIONS = [
   "Shellfish-Free", "Low-Sodium", "Sugar-Free", "Halal", "Kosher", "Low-Carb"
 ];
 
-export const DAILY_WATER_GOAL = 2500; // ml
+export const DAILY_WATER_GOAL = 2500; // ml, the default
+export const MIN_WATER_GOAL = 500;
+export const MAX_WATER_GOAL = 6000;
+// The user's own daily water goal in ml (kept inside a sensible range), or the default.
+export const getWaterGoal = (profile?: { waterGoal?: number } | null): number => {
+  const g = Number(profile?.waterGoal);
+  if (!isFinite(g) || g <= 0) return DAILY_WATER_GOAL;
+  return Math.min(MAX_WATER_GOAL, Math.max(MIN_WATER_GOAL, Math.round(g / 50) * 50));
+};
 
 // --- UTILS ---
 export const getDayName = (date: Date) => {

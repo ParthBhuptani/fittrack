@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Info, Minus, Plus } from 'lucide-react';
 import { ProgressLog, WeeklyPlan } from '../../types';
-import { DAILY_WATER_GOAL, formatDate, fromDisplayWeight, getPlanDayIndex, getWeightLabel, toDisplayWeight } from '../../utils';
+import { formatDate, fromDisplayWeight, getPlanDayIndex, getWeightLabel, toDisplayWeight } from '../../utils';
 import { useToast } from '../ui/Toast';
 import WeekStrip, { DAYNAMES, isWorkoutDayFull, weekDates } from './WeekStrip';
 import './views.css';
@@ -16,6 +16,7 @@ interface Props {
   onSelectDate: (d: Date) => void;
   isToday: boolean;
   waterIntake: number;
+  waterGoal: number;
   onWater: (delta: number) => void;
   onSaveWeight: (kg: number) => void;
   onOpenWorkouts: () => void;
@@ -29,7 +30,7 @@ const greeting = () => {
 
 const TodayView: React.FC<Props> = ({
   firstName, plan, logs, units, profileWeightKg, selectedDate, onSelectDate, isToday,
-  waterIntake, onWater, onSaveWeight, onOpenWorkouts, onOpenMeals,
+  waterIntake, waterGoal, onWater, onSaveWeight, onOpenWorkouts, onOpenMeals,
 }) => {
   const toast = useToast();
   const [weightOpen, setWeightOpen] = useState(false);
@@ -54,7 +55,10 @@ const TodayView: React.FC<Props> = ({
   const mealPct = target ? Math.min(100, Math.round((eaten / target) * 100)) : 0;
   const nextIdx = meals.findIndex((_, i) => !details[`meal-${i}`]);
 
-  const waterPct = Math.min(100, Math.round((waterIntake / DAILY_WATER_GOAL) * 100));
+  // At most 12 blocks, however big the goal is.
+  const glassCount = Math.min(12, Math.max(1, Math.ceil(waterGoal / 250)));
+  const glassMl = waterGoal / glassCount;
+  const waterPct = Math.min(100, Math.round((waterIntake / waterGoal) * 100));
 
   // Weekly workout progress: days this week where every exercise is ticked.
   const planWorkoutDays = (plan.days || []).filter(d => (d.workout?.exercises?.length || 0) > 0).length;
@@ -119,14 +123,14 @@ const TodayView: React.FC<Props> = ({
 
           <div className="card hov col">
             <span className="label">Water</span>
-            <div className="big">{waterIntake.toLocaleString('en-US')}<small>of {DAILY_WATER_GOAL.toLocaleString('en-US')} ml</small></div>
+            <div className="big">{waterIntake.toLocaleString('en-US')}<small>of {waterGoal.toLocaleString('en-US')} ml</small></div>
             <div className="bar blue"><i style={{ width: `${waterPct}%` }} /></div>
             <div className="glasses" aria-hidden="true">
-              {Array.from({ length: Math.ceil(DAILY_WATER_GOAL / 250) }, (_, k) => (
-                <i key={k} className={k < Math.floor(waterIntake / 250) ? 'on' : ''} />
+              {Array.from({ length: glassCount }, (_, k) => (
+                <i key={k} className={k < Math.floor(waterIntake / glassMl) ? 'on' : ''} />
               ))}
             </div>
-            <p className="glass-note">Each block is one 250 ml glass</p>
+            <p className="glass-note">Each block is about {Math.round(glassMl / 50) * 50} ml</p>
             <div className="water-ctl">
               <button type="button" className="btn ghost" onClick={() => onWater(-250)} disabled={!isToday || waterIntake === 0} aria-label="Remove 250 ml"><Minus size={16} aria-hidden="true" />250</button>
               <button type="button" className="btn" onClick={() => onWater(250)} disabled={!isToday} aria-label="Add 250 ml"><Plus size={16} aria-hidden="true" />250 ml</button>

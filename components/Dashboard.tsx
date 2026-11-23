@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { User, UserProfile, WeeklyPlan, ProgressLog, Goal } from '../types';
 import { StorageService } from '../services/storageService';
 import { GeminiService } from '../services/geminiService';
@@ -9,6 +9,7 @@ import AppShell, { TabId } from './app/AppShell';
 import { Sheet } from './ui/Sheet';
 import { useToast } from './ui/Toast';
 import TodayView from './app/TodayView';
+import ProgressView from './app/ProgressView';
 import CoachView from './app/CoachView';
 import MealsView from './app/MealsView';
 import WorkoutsView, { TimerMode } from './app/WorkoutsView';
@@ -49,7 +50,7 @@ import {
   Timer
 } from 'lucide-react';
 import {
-  DAILY_WATER_GOAL,
+  getWaterGoal,
   getDayName,
   formatDate,
   getPlanDayIndex,
@@ -59,7 +60,6 @@ import {
   toDisplayHeight
 } from '../utils';
 // Loaded only when the Progress tab opens, so the charts library stays out of the first download.
-const AnalyticsView = lazy(() => import('./AnalyticsView'));
 
 const Dashboard: React.FC<{
   user: User;
@@ -738,7 +738,7 @@ const Dashboard: React.FC<{
         onReport={() => setShowReport(true)}
         onLogout={onLogout}
       >
-        <div className={(activeTab === 'overview' || activeTab === 'workout' || activeTab === 'diet' || activeTab === 'chat') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
+        <div className={(activeTab === 'overview' || activeTab === 'workout' || activeTab === 'diet' || activeTab === 'chat' || activeTab === 'analytics') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
 
           {/* TODAY TAB */}
           {activeTab === 'overview' && (
@@ -752,6 +752,7 @@ const Dashboard: React.FC<{
               onSelectDate={setSelectedDate}
               isToday={isToday}
               waterIntake={waterIntake}
+              waterGoal={getWaterGoal(user.profile)}
               onWater={updateWater}
               onSaveWeight={(kg) => handleSaveLog({ weight: kg })}
               onOpenWorkouts={() => setActiveTab('workout')}
@@ -759,11 +760,9 @@ const Dashboard: React.FC<{
             />
           )}
 
-          {/* ANALYTICS TAB */}
+          {/* PROGRESS TAB */}
           {activeTab === 'analytics' && (
-            <Suspense fallback={<div className="py-20 text-center text-slate-400 text-sm">Loading your progress...</div>}>
-              <AnalyticsView logs={logs} profile={user.profile!} plan={plan} />
-            </Suspense>
+            <ProgressView plan={plan} logs={logs} streak={streakCount} units={user.profile?.units || 'metric'} waterGoal={getWaterGoal(user.profile)} onReport={() => setShowReport(true)} />
           )}
 
           {/* WORKOUTS TAB */}
