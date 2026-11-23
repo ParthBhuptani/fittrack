@@ -9,6 +9,7 @@ import AppShell, { TabId } from './app/AppShell';
 import { Sheet } from './ui/Sheet';
 import { useToast } from './ui/Toast';
 import TodayView from './app/TodayView';
+import CoachView from './app/CoachView';
 import MealsView from './app/MealsView';
 import WorkoutsView, { TimerMode } from './app/WorkoutsView';
 
@@ -73,7 +74,6 @@ const Dashboard: React.FC<{
 }> = ({ user, plan, onLogout, logs, onLogProgress, onUpdatePlan, onUpdateUser, theme, toggleTheme }) => {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
-  const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'model', text: string }[]>([]);
   const [isChatting, setIsChatting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -312,27 +312,37 @@ const Dashboard: React.FC<{
       : `https://www.google.com/search?q=${q}`;
   };
 
-  const handleChatSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-
-    const userMsg = chatInput;
-    setChatInput('');
-    const newHistory: { role: 'user' | 'model', text: string }[] = [...chatHistory, { role: 'user', text: userMsg }];
+  // A ref (not state) guards against double-sends: state only updates after the next render,
+  // so two quick taps could both get through before `isChatting` became true.
+  const chatBusy = useRef(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const handleChatSend = async (userMsg: string, retry = false) => {
+    if (!userMsg.trim() || chatBusy.current) return;
+    chatBusy.current = true;
+    setChatError(null);
+    // On a retry the question is already in the history, so it is not added a second time.
+    const before = retry ? chatHistory.slice(0, -1) : chatHistory;
+    const newHistory: { role: 'user' | 'model', text: string }[] = retry ? chatHistory : [...chatHistory, { role: 'user', text: userMsg }];
     setChatHistory(newHistory);
-    await StorageService.saveChatHistory(user.id, newHistory);
     setIsChatting(true);
 
     try {
-      const response = await GeminiService.chatWithCoach(newHistory, userMsg, user.profile!);
+      if (!retry) StorageService.saveChatHistory(user.id, newHistory).catch(() => {});
+      const response = await GeminiService.chatWithCoach(before, userMsg, user.profile!);
       const updatedHistory: { role: 'user' | 'model', text: string }[] = [...newHistory, { role: 'model', text: response }];
       setChatHistory(updatedHistory);
       await StorageService.saveChatHistory(user.id, updatedHistory);
     } catch (error) {
-      setChatHistory(prev => [...prev, { role: 'model', text: error instanceof Error ? error.message : "Sorry, I had trouble connecting. Try again." }]);
+      // Errors are shown next to the chat, not stored as coach messages, so they never end up in the history.
+      setChatError(error instanceof Error ? error.message : "Sorry, I had trouble connecting. Try again.");
     } finally {
       setIsChatting(false);
+      chatBusy.current = false;
     }
+  };
+  const handleChatRetry = () => {
+    const last = chatHistory[chatHistory.length - 1];
+    if (last && last.role === 'user') handleChatSend(last.text, true);
   };
 
   const generatePDFReport = (range: 'daily' | 'weekly' | 'monthly') => {
@@ -728,7 +738,7 @@ const Dashboard: React.FC<{
         onReport={() => setShowReport(true)}
         onLogout={onLogout}
       >
-        <div className={(activeTab === 'overview' || activeTab === 'workout' || activeTab === 'diet') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
+        <div className={(activeTab === 'overview' || activeTab === 'workout' || activeTab === 'diet' || activeTab === 'chat') ? 'relative min-h-full' : 'p-4 md:p-8 relative min-h-full'}>
 
           {/* TODAY TAB */}
           {activeTab === 'overview' && (
@@ -791,58 +801,9 @@ const Dashboard: React.FC<{
             />
           )}
 
-          {/* CHAT TAB */}
+          {/* COACH TAB */}
           {activeTab === 'chat' && (
-            <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] md:h-[calc(100vh-10rem)] flex flex-col bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden animate-fade-in relative">
-              <div className="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between shrink-0">
-                <h2 className="font-bold flex items-center gap-2 dark:text-white">
-                  <div className="bg-brand-100 dark:bg-brand-900/50 p-2 rounded-lg text-brand-600">
-                    <MessageSquare className="w-5 h-5" />
-                  </div>
-                  AI Fitness Coach
-                </h2>
-                <span className="text-xs text-slate-400 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Online
-                </span>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
-                {chatHistory.map((msg, idx) => (
-                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[85%] p-4 md:p-5 rounded-3xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
-                      ? 'bg-brand-600 text-white rounded-br-none'
-                      : 'bg-white border border-slate-100 dark:bg-slate-700 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-bl-none'
-                      }`}>
-                      <div className="markdown" dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>') }} />
-                    </div>
-                  </div>
-                ))}
-                {isChatting && (
-                  <div className="flex justify-start">
-                    <div className="bg-white border border-slate-100 dark:bg-slate-700 dark:border-slate-600 p-4 rounded-3xl rounded-bl-none flex gap-2 items-center shadow-sm">
-                      <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce delay-75" />
-                      <div className="w-2 h-2 bg-brand-400 rounded-full animate-bounce delay-150" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <form onSubmit={handleChatSubmit} className="p-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 shrink-0">
-                <div className="flex gap-3 items-center">
-                  <input
-                    value={chatInput}
-                    onChange={e => setChatInput(e.target.value)}
-                    placeholder="Ask about exercises, food, or tips..."
-                    className="flex-1 px-4 py-3 rounded-xl border bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all dark:text-white"
-                  />
-                  <Button type="submit" disabled={isChatting || !chatInput.trim()} className="px-6 py-3 rounded-xl">
-                    <span className="hidden sm:inline">Send</span>
-                    <span className="sm:hidden"><MessageSquare className="w-4 h-4" /></span>
-                  </Button>
-                </div>
-              </form>
-            </div>
+            <CoachView messages={chatHistory} typing={isChatting} error={chatError} onSend={(t) => handleChatSend(t)} onRetry={handleChatRetry} />
           )}
 
           {/* SETTINGS TAB */}

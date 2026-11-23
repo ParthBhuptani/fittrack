@@ -23,7 +23,9 @@ async function callApi(action: string, payload: any) {
   }
 
   if (!res.ok) {
-    let message = 'Something went wrong. Please try again.';
+    let message = res.status >= 500
+      ? 'The AI is busy right now. Please wait a moment and try again.'
+      : 'Something went wrong. Please try again.';
     try {
       const body = await res.json();
       if (body?.error && res.status < 500) message = body.error;
