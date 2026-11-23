@@ -26,7 +26,9 @@
 .as .ni svg{flex:none;transition:transform .2s}
 .as .ni:hover svg{transform:translateY(-1px) scale(1.08)}
 .as .ni.on{background:var(--soft);color:var(--accent)}
-.as .side-note{margin:auto 0 0;padding:14px;border-radius:14px;background:var(--soft);font-size:13px;line-height:1.45;color:var(--muted)}
+.as .ni.set{margin-top:auto}
+.as .menu button.danger{color:var(--danger)}
+.as .side-note{margin:8px 0 0;padding:14px;border-radius:14px;background:var(--soft);font-size:13px;line-height:1.45;color:var(--muted)}
 .as .side-note b{color:var(--ink)}
 .as .pill-ind{display:none}
 .as .main{grid-column:2;grid-row:2;overflow:auto;min-width:0;background:var(--canvas)}
