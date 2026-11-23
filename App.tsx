@@ -3,23 +3,14 @@ import { User, UserProfile, WeeklyPlan, ProgressLog } from './types';
 import { StorageService } from './services/storageService';
 import { GeminiService } from './services/geminiService';
 import LandingPage from './components/LandingPage';
-import { Activity } from 'lucide-react';
+import Loader from './components/ui/Loader';
 
 // Lazy-loaded: these are only fetched once a user actually needs them,
 // keeping the initial landing page load small and fast.
 const AuthFlow = lazy(() => import('./components/AuthFlow'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 
-const SuspenseFallback: React.FC = () => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-    <div className="relative w-16 h-16">
-      <div className="absolute inset-0 bg-brand-500 rounded-full opacity-20 animate-ping"></div>
-      <div className="relative bg-brand-100 dark:bg-brand-900 rounded-full w-full h-full flex items-center justify-center">
-        <Activity className="w-8 h-8 text-brand-600" />
-      </div>
-    </div>
-  </div>
-);
+const SuspenseFallback = Loader;
 
 export default function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
