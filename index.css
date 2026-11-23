@@ -73,3 +73,10 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+/* Full-screen loading state (components/ui/Loader.tsx): the logo line draws left to right, again and again */
+.boot{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;background:var(--canvas);color:var(--ink)}
+.boot-logo{display:flex;align-items:center;gap:10px}
+.boot svg{overflow:visible;display:block}
+.boot .pulse{stroke-dasharray:1;stroke-dashoffset:1;animation:boot-draw 1.2s cubic-bezier(.4,0,.2,1) infinite}
+@keyframes boot-draw{0%{stroke-dashoffset:1}75%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.boot .pulse{animation:none;stroke-dashoffset:0}}
