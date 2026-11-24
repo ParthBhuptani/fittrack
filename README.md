@@ -7,16 +7,19 @@
 <p align="center"><i>AI-powered, personalized workout and diet planning.</i></p>
 
 <p align="center">
-  <a href="https://fittrack-planner.vercel.app"><img src="https://img.shields.io/badge/demo-live-10b981?style=flat-square" alt="Live Demo" /></a>
+  <a href="https://fittrack.parthbhuptani.me"><img src="https://img.shields.io/badge/demo-live-10b981?style=flat-square" alt="Live Demo" /></a>
   <a href="https://react.dev"><img src="https://img.shields.io/badge/frontend-React%20%2B%20TypeScript-3178c6?style=flat-square&logo=react" alt="React" /></a>
+  <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/styles-Tailwind%20CSS-06b6d4?style=flat-square&logo=tailwindcss" alt="Tailwind CSS" /></a>
   <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/AI-Google%20Gemini-4285F4?style=flat-square&logo=google" alt="Gemini AI" /></a>
   <a href="https://supabase.com"><img src="https://img.shields.io/badge/backend-Supabase-3ECF8E?style=flat-square&logo=supabase" alt="Supabase" /></a>
   <a href="https://vercel.com"><img src="https://img.shields.io/badge/hosted%20on-Vercel-000000?style=flat-square&logo=vercel" alt="Vercel" /></a>
 </p>
 
-> FitTrack generates a complete, personalized 7-day workout and diet plan from a single user profile — age, weight, goal, activity level, dietary restrictions, injuries, and available equipment — then lets users track progress and ask an AI coach follow-up questions along the way.
+> FitTrack generates a complete, personalized 7-day workout and diet plan from a single profile (age, weight, goal, activity level, dietary restrictions, injuries and available equipment), then helps you follow it day by day: tick off exercises and meals, track water and weight, and ask an AI coach follow-up questions.
 
-**🔗 Live app:** [fittrack-planner.vercel.app](https://fittrack-planner.vercel.app)
+**Live app:** [fittrack.parthbhuptani.me](https://fittrack.parthbhuptani.me)
+
+FitTrack is free and open source.
 
 ---
 
@@ -25,6 +28,7 @@
 - [About the Project](#-about-the-project)
 - [Live Demo](#-live-demo)
 - [Features](#-features)
+- [Design](#-design)
 - [Tech Stack](#️-tech-stack)
 - [Project Structure](#-project-structure)
 - [Architecture & Security](#-architecture--security)
@@ -32,23 +36,24 @@
 - [Running Locally](#-running-locally)
 - [Deployment](#️-deployment)
 - [Roadmap](#️-roadmap)
+- [Contributing](#-contributing)
 - [License](#-license)
 
 ---
 
 ## 🧠 About the Project
 
-**FitTrack** is a full-stack web app that turns a single fitness profile into a complete, AI-generated weekly plan — no generic templates, no one-size-fits-all workouts. It's built to actually adapt to the person using it: their injuries, their allergies, their equipment, their goals.
+**FitTrack** is a full-stack web app that turns one fitness profile into a complete, AI-generated weekly plan. There are no generic templates: it adapts to the person using it, including their injuries, allergies, equipment and goals.
 
-Everything from the workout structure to the meal recipes is generated fresh per user, with a chat-based AI coach available for follow-up questions once the plan is live. Accounts, plans, and progress are backed by a real database with proper authentication — not just stored in the browser.
+Everything from the workout structure to the meal recipes is generated fresh for each user, and a chat-based AI coach is there for follow-up questions once the plan is live. Accounts, plans and progress are stored in a real database with proper authentication, not in the browser.
 
 ---
 
 ## 🌐 Live Demo
 
-**🔗 [https://fittrack-planner.vercel.app](https://fittrack-planner.vercel.app)**
+**[https://fittrack.parthbhuptani.me](https://fittrack.parthbhuptani.me)**
 
-> 💡 Sign up (email or Google), fill out your profile, and watch a full 7-day plan get generated in real time — try the AI coach chat afterward too.
+> Sign up (email or Google), fill out your profile, and watch a 7-day plan get generated. Then try the Today tab, the meal recipes and the AI coach.
 
 ---
 
@@ -56,18 +61,30 @@ Everything from the workout structure to the meal recipes is generated fresh per
 
 | | Feature | Description |
 |---|---|---|
-| 🧬 | **Personalized 7-Day Plans** | Full week of workouts and meals tailored to age, weight, gender, goal, activity level, diet type, allergies, injuries, and available equipment |
-| 🔄 | **Exercise Variations** | Every exercise includes an easier and harder variation, so the plan scales with fitness level |
-| 🍳 | **Full Recipes** | Every meal includes a real ingredient list and step-by-step cooking instructions |
-| 🩹 | **Injury-Aware** | Workouts are generated with the user's stated injuries/conditions factored in |
-| 🤖 | **AI Coach Chat** | In-app chat with context on the user's specific profile and current plan |
-| 📊 | **Progress Tracking** | Workout completion and weight logged over time, visualized with interactive charts |
-| 💧 | **Water Tracking** | Daily water intake tracked against a set goal |
-| ⏱️ | **Workout Timers** | Built-in play / pause / reset timers for guided sessions |
-| 🌗 | **Per-Account Dark Mode** | Theme preference saved to each account, follows the user across devices |
-| 👤 | **Real Accounts** | Secure sign up / log in via email/password or Google, backed by Supabase Auth |
-| 👁️ | **Password Visibility Toggle** | Show/hide password fields on login and signup |
-| 🔑 | **Google Sign-In** | One-click sign-in/sign-up via Google OAuth, with automatic profile-setup routing for first-time Google users |
+| 🧬 | **Personalized 7-day plans** | A full week of workouts and meals tailored to age, weight, goal, activity level, diet type, allergies, injuries and equipment |
+| 📅 | **Today view** | One screen for the day: workout, meals, water and your streak, with a week strip to jump between days |
+| 🏋️ | **Workouts** | Tick exercises off as you go, with sets and reps, form tips, a built-in rest/workout timer and form videos |
+| 🔄 | **Easier / harder swaps** | Every exercise has an easier and a harder variation. Swaps are saved to your plan |
+| 🍳 | **Meals and recipes** | Every meal has calories, a real ingredient list and step-by-step instructions, plus a cooking-video link |
+| 🩹 | **Injury-aware** | Workouts are generated with your stated injuries and conditions in mind |
+| 🤖 | **AI coach** | In-app chat that knows your profile and your plan. Chat history is saved |
+| 📊 | **Progress** | Week and month views of daily completion, weight and water, with hover details, plus a printable report |
+| 💧 | **Water tracking** | Daily intake against a goal you set yourself in Settings |
+| ⚙️ | **Settings** | Edit your profile and units (metric or imperial). Rebuild the plan when something important changes |
+| 🌗 | **Light and dark themes** | Saved per account and follows you across devices |
+| 👤 | **Real accounts** | Sign up and log in by email and password or Google, backed by Supabase Auth |
+| 📱 | **Built for phones** | Bottom navigation on small screens, sidebar on desktop, tested down to 320px wide |
+
+---
+
+## 🎨 Design
+
+The interface is deliberately plain: a calm light or dark canvas, one green accent, generous spacing and large readable type. It uses a small set of design tokens (CSS variables) for colour and surface, so both themes stay consistent.
+
+- **Type:** Bricolage Grotesque for headings, Instrument Sans for body text, both self-hosted through Fontsource
+- **Icons:** Lucide
+- **Motion:** small and purposeful. It respects the system "reduce motion" setting everywhere except the loading logo, which needs to move to show that something is loading
+- **Styles:** Tailwind CSS compiled at build time, plus scoped stylesheets for the landing page, sign-up flow and app screens
 
 ---
 
@@ -75,12 +92,14 @@ Everything from the workout structure to the meal recipes is generated fresh per
 
 | Layer | Technology |
 |---|---|
-| Frontend | React, TypeScript, Vite, Tailwind CSS |
-| Charts | Recharts |
+| Frontend | React 19, TypeScript, Vite |
+| Styling | Tailwind CSS (build-time via PostCSS), CSS design tokens, Fontsource variable fonts |
+| Charts | Plain CSS and SVG (no chart library) |
 | Icons | Lucide React |
-| AI | Google Gemini API |
-| Auth & Database | Supabase (Postgres + Authentication + Row Level Security), Google OAuth |
-| Hosting | Vercel (frontend + serverless functions) |
+| AI | Google Gemini API, called only from a serverless function |
+| Auth and database | Supabase (Postgres, Authentication, Row Level Security), Google OAuth |
+| Hosting | Vercel (frontend and serverless functions) |
+| Analytics | Vercel Web Analytics |
 
 ---
 
@@ -89,32 +108,41 @@ Everything from the workout structure to the meal recipes is generated fresh per
 ```
 fittrack/
 ├── api/
-│   └── gemini.ts               # Serverless function — holds the Gemini API keys server-side,
-│                                # handles plan generation + AI chat requests, with automatic
-│                                # fallback to a backup key on failure
+│   └── gemini.ts               # Serverless function: holds the Gemini API keys server-side, checks the
+│                                # user's login, enforces per-user usage limits, validates the request,
+│                                # handles plan generation and chat, with key and model fallback
 │
 ├── components/
-│   ├── Button.tsx
-│   ├── Input.tsx                # Includes show/hide toggle for password fields
-│   ├── LandingPage.tsx          # First-paint view — not lazy-loaded
-│   ├── AuthFlow.tsx             # Login / signup / Google sign-in / profile setup (lazy-loaded)
-│   ├── Dashboard.tsx            # Main app shell after login (lazy-loaded)
-│   ├── SettingsView.tsx         # Profile editing, rendered inside Dashboard
-│   └── AnalyticsView.tsx        # Progress charts, rendered inside Dashboard
+│   ├── LandingPage.tsx          # Home page (first paint, not lazy-loaded)
+│   ├── AuthFlow.tsx             # Login / sign up / Google / profile setup / plan generation (lazy-loaded)
+│   ├── Dashboard.tsx            # Logged-in app: state, data saving, tab routing (lazy-loaded)
+│   ├── landing/                 # Landing page styles and content data
+│   ├── auth/                    # Sign-up and login styles
+│   ├── app/
+│   │   ├── AppShell.tsx         # Top bar, sidebar, mobile bottom bar, profile menu
+│   │   ├── TodayView.tsx        # Today tab
+│   │   ├── WorkoutsView.tsx     # Workouts tab (checklist, swaps, timer)
+│   │   ├── MealsView.tsx        # Meals tab (recipes, ticking meals)
+│   │   ├── CoachView.tsx        # AI coach chat
+│   │   ├── ProgressView.tsx     # Progress charts and stats
+│   │   ├── SettingsView.tsx     # Profile, units, water goal, log out
+│   │   ├── WeekStrip.tsx        # Week selector used by several tabs
+│   │   └── *.css                # Scoped styles for the shell and the views
+│   └── ui/                      # Toast, Dropdown, Sheet, Loader
 │
 ├── services/
-│   ├── geminiService.ts         # Frontend client — calls /api/gemini, never touches the real key
+│   ├── geminiService.ts         # Frontend client: calls /api/gemini, never sees the real key
 │   ├── supabaseClient.ts        # Supabase connection setup
-│   └── storageService.ts        # All auth + database logic — accounts, profiles, plans,
-│                                 # logs, chat history, per-account theme, Google sign-in
+│   └── storageService.ts        # Auth and database logic: accounts, profiles, plans, logs,
+│                                # chat history, theme, Google sign-in
 │
-├── public/                      # Static assets: favicon, logo, OG image, robots.txt, sitemap.xml
-│
-├── App.tsx                      # Lean orchestrator — session check, routing, top-level state
-├── utils.ts                     # Shared constants and helper functions
-├── index.html                   # Page shell, favicon, title, meta/OG tags
-├── index.tsx                    # React entry point
+├── public/                      # Favicon, logo, OG image, robots.txt, sitemap.xml
+├── App.tsx                      # Session check, routing, top-level state
+├── utils.ts                     # Shared helpers (dates, units, water goal)
 ├── types.ts                     # Shared TypeScript types
+├── index.css                    # Tailwind layers, design tokens, loader
+├── index.html                   # Page shell, meta and link-preview tags
+├── tailwind.config.js / postcss.config.js
 └── vite.config.ts / tsconfig.json / package.json
 ```
 
@@ -124,23 +152,34 @@ fittrack/
 
 **AI calls are never made directly from the browser.**
 
-- A serverless function (`/api/gemini.ts`) holds the Gemini API keys server-side and handles both plan generation and chat requests.
-- The frontend calls this internal endpoint rather than Google's API directly, so the keys are never exposed in the client bundle or visible via dev tools.
-- **Automatic key fallback:** if a request fails on the primary key (rate limit, quota, temporary outage), it automatically retries on a backup key — transparent to the user.
+- A serverless function (`/api/gemini.ts`) holds the Gemini API keys server-side and handles plan generation and chat.
+- The frontend calls this internal endpoint rather than Google's API, so keys never appear in the client bundle or in dev tools.
+- **Login required:** the function checks the user's Supabase session before doing anything.
+- **Per-user limits:** usage is counted in an `api_usage` table (currently 10 plan generations a day and 40 chat messages an hour per user). If the database can't be reached, the function refuses the request rather than allowing free calls.
+- **Input checks:** request size, message length and profile shape are validated server-side.
+- **Key and model fallback:** if a call fails (rate limit, quota, temporary outage), it retries on a backup key or model, invisibly to the user.
 
-**Authentication and data are handled by Supabase, not the browser.**
+**Authentication and data are handled by Supabase.**
 
-- Real authentication via Supabase Auth — email/password and Google OAuth — replaces browser-stored credentials.
-- All user data (profiles, plans, progress logs, chat history) lives in Postgres, structured across dedicated tables, and follows the account across devices and browsers.
-- **Row Level Security (RLS)** is enabled on every table, enforcing at the database level that a user can only ever read or write their own rows.
-- **Google sign-in users** skip the normal signup form (since OAuth authenticates immediately), so the app detects a first-time Google user (authenticated, no profile yet) and routes them straight to the profile-setup step before generating their plan.
+- Real authentication via Supabase Auth (email and password, and Google OAuth).
+- Profiles, plans, progress logs and chat history live in Postgres and follow the account across devices.
+- **Row Level Security** is enabled on every table, so a user can only read or write their own rows.
+- First-time Google users have no profile yet, so the app detects this and sends them to profile setup before generating a plan.
 
+**Safe rendering.** The coach's replies are rendered as plain text with simple formatting (line breaks, lists, bold), never as raw HTML.
+
+**Dates.** Day boundaries use the user's local date, so a log made at 1 a.m. lands on the right day in any time zone.
+
+![FitTrack architecture](./docs/architecture.png)
 ---
 
 ## ⚡ Performance
 
-- The app is **code-split**: the initial bundle only includes the landing page. The login/signup flow and the full dashboard (including the charts library) are fetched on demand via `React.lazy` + `Suspense`, cutting the first-load bundle size roughly in half.
-- A session-check guard prevents the landing page from briefly flashing for returning, already-logged-in users while their session is being verified.
+- The app is **code-split**: the first download contains only the landing page. The sign-up flow and the dashboard load on demand with `React.lazy` and `Suspense`.
+- Charts are drawn with CSS and SVG, with no chart library to download.
+- Tailwind is compiled at build time, so there is no runtime styling script.
+- Fonts are self-hosted and variable, so there are no requests to third-party font servers.
+- A session-check guard stops the landing page flashing for returning, logged-in users.
 
 ---
 
@@ -165,13 +204,13 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 npm run dev
 ```
 
-> AI plan generation and the AI chat coach depend on the serverless function in `/api`, which only runs in a deployed environment. Locally you can test the UI, auth, and database flows; AI responses require a deployed instance.
+> AI plan generation and the AI coach depend on the serverless function in `/api`, which runs in a deployed environment (or locally with the Vercel CLI's `vercel dev`). With plain `npm run dev` you can work on the UI, auth and database flows; AI responses need a deployed instance or `vercel dev`.
 
 ---
 
 ## ☁️ Deployment
 
-Deployed on [Vercel](https://vercel.com), connected to this repository's `main` branch — every push triggers an automatic redeploy.
+Deployed on [Vercel](https://vercel.com), connected to this repository's `main` branch. Every merge triggers an automatic redeploy. The production site is served at **fittrack.parthbhuptani.me**, and the old `*.vercel.app` addresses redirect to it with a permanent (308) redirect.
 
 Required environment variables (Vercel project settings):
 - `GEMINI_API_KEY`
@@ -179,54 +218,59 @@ Required environment variables (Vercel project settings):
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 
-New features are developed on separate branches and tested on Vercel's auto-generated branch preview deployments before merging to `main`.
+The serverless function also needs access to the Supabase `api_usage` table for usage limits.
+
+Auth setup: add the production and local addresses to Supabase (Authentication, URL Configuration) and to the Google OAuth client's authorised origins.
+
+Work happens on feature branches and goes to `main` through pull requests, tested on Vercel's preview deployments first.
 
 ---
 
 ## 🗺️ Roadmap
 
-**Security & Robustness**
-- [ ] Password reset / "Forgot password" flow
-- [ ] Rate limiting on `/api/gemini` to prevent quota abuse
-- [ ] Re-enable email confirmation before wider public sharing
+**Done**
+- [x] Responsive redesign with light and dark themes
+- [x] Landing page and sign-up flow redesign
+- [x] Today, Workouts, Meals, Coach, Progress and Settings screens
+- [x] Per-user rate limiting and input validation on the AI endpoint
+- [x] Charts without a chart library
+- [x] Custom domain
+- [x] Per-user daily water goal
 
-**Performance**
-- [ ] Split `AnalyticsView` (charts) out of the Dashboard bundle so `recharts` only loads when the Progress tab is opened
+**Next: trust and basics before wider sharing**
+- [ ] Forgot-password flow and email confirmation on sign-up
+- [ ] Delete my account (server function) and export my data
+- [ ] Privacy policy and terms pages, linked from the footer
+- [ ] Error tracking (Sentry) and basic automated tests
+- [ ] Support or contact channel
+- [ ] Accessibility and real-device testing pass
+- [ ] Database review: indexes, backups, usage-table cleanup
 
-**New Features**
-- [ ] Add real charts to the printed workout/diet report
-- [ ] Photo-based meal logging — upload a food photo, Gemini estimates calories automatically
-- [ ] Support longer plan durations (beyond the current fixed 7 days)
+**Then: growth features**
+- [ ] Transactional emails (welcome, weekly summary) through a sender such as Resend
+- [ ] Payments and plans: free and paid tiers, with limits per tier
+- [ ] Photo-based meal logging: upload a food photo and Gemini estimates calories
+- [ ] Longer plan durations (beyond the fixed 7 days) and plan history
+- [ ] Real charts in the printed report
+- [ ] More goals (endurance, flexibility)
+- [ ] Reminders and an installable app (PWA)
 
-**UX Polish**
-- [ ] General UI refinements
-- [ ] Dedicated mobile responsiveness pass
+**Later**
+- [ ] Testimonials and social proof, once there are real users
+- [ ] Usage analytics events (sign-ups, drop-off points)
+- [ ] More languages
 
-**Homepage / Landing Page Redesign**
-- [ ] Polish the hero section with a clearer value proposition
-- [ ] "How it works" section — step-by-step visual walkthrough (profile → AI generates plan → track progress)
-- [ ] Features showcase section — AI coach, recipes, progress tracking, not just plan generation
-- [ ] Social proof / stats section
-- [ ] FAQ section addressing common pre-signup questions
-- [ ] Proper footer with links
-- [ ] Testimonials section (placeholder until there are real users)
+---
 
-**SaaS Readiness**
-- [ ] Onboarding email on signup
-- [ ] A support/contact channel for users
-- [ ] Basic usage analytics (signups, drop-off points)
-- [ ] Plan/tier structure, if this is ever monetized
+## 🤝 Contributing
 
-**Nice-to-Haves**
-- [ ] Custom domain
-- [ ] Basic automated tests
-- [ ] Error tracking (e.g. Sentry)
+Ideas and pull requests are welcome. Open an issue first for anything large. Please keep changes small and focused, and check on a phone-width screen as well as desktop.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
 ---
 
