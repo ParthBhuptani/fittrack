@@ -79,4 +79,4 @@
 .boot svg{overflow:visible;display:block}
 .boot .pulse{stroke-dasharray:1;stroke-dashoffset:1;animation:boot-draw 1.2s cubic-bezier(.4,0,.2,1) infinite}
 @keyframes boot-draw{0%{stroke-dashoffset:1}75%{stroke-dashoffset:0}100%{stroke-dashoffset:0}}
-@media (prefers-reduced-motion:reduce){.boot .pulse{animation:none;stroke-dashoffset:0}}
+/* No reduced-motion switch-off here on purpose: this is a loading indicator, and without it the logo looks frozen. */
